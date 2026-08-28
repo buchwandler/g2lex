@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -68,7 +69,7 @@ def test_external_adapter_data_round_trips_through_g2lex() -> None:
 
 def test_gruut_sqlite_adapter_preserves_order_and_roles(tmp_path) -> None:
     path = tmp_path / "lexicon.sqlite"
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection:
         connection.execute(
             "CREATE TABLE word_phonemes (word TEXT, pron_order INTEGER, phonemes TEXT, role TEXT)"
         )

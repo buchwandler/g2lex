@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from ..model import SourceInfo, TypedLexiconData
@@ -14,7 +15,7 @@ def parse_gruut_sqlite(path: str | Path, *, source_id: str | None = None) -> Typ
     """Import the ``word_phonemes`` table without depending on Gruut."""
     source_path = Path(path)
     data = source_path.read_bytes()
-    with sqlite3.connect(f"file:{source_path.resolve()}?mode=ro", uri=True) as connection:
+    with closing(sqlite3.connect(f"file:{source_path.resolve()}?mode=ro", uri=True)) as connection:
         columns = {row[1] for row in connection.execute("PRAGMA table_info(word_phonemes)")}
         required = {"word", "pron_order", "phonemes"}
         if not required.issubset(columns):

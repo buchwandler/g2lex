@@ -1,4 +1,4 @@
-g2lex MVP
+G2Lex
 
 The design was informed by the Apache-2.0-licensed KokoroG2P repository, in particular
 its experiments/de_lexicon_entry_reduction research harness and the adjacent pinned

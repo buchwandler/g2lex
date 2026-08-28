@@ -25,6 +25,18 @@ with g2lex.open("lexicon.g2lex") as lexicon:
     print(lexicon["example"])
 ```
 
+## Installation
+
+Install the latest release from PyPI:
+
+```bash
+python -m pip install g2lex
+```
+
+G2Lex 0.1.x is an alpha API and format release. The stable G2Lex Binary Lexicon v1 format is intended to remain readable, while experimental reduction APIs and assets may change.
+
+Supported Python versions are 3.10 through 3.14.
+
 ## Features
 
 - Exact typed pronunciation lexicons
@@ -84,11 +96,13 @@ layer containing the raw key, so a tagged record does not fall through to a
 lower layer:
 
 ```python
-lexicon = LayeredLexicon([
-    LexiconLayer("user", user_lexicon, {}),
-    LexiconLayer("domain", domain_lexicon, {}),
-    LexiconLayer("base", base_lexicon, {}),
-])
+lexicon = LayeredLexicon(
+    [
+        LexiconLayer("user", user_lexicon, {}),
+        LexiconLayer("domain", domain_lexicon, {}),
+        LexiconLayer("base", base_lexicon, {}),
+    ]
+)
 ```
 
 For package resources, retain the resource lifetime through the lexicon:
@@ -161,9 +175,7 @@ g2lex reduce source.tsv reduced.lxc --format tsv
 g2lex experimental verify-reduced source.tsv reduced.lxc --format tsv
 ```
 
-Reduction assets use their own experimental loader and are not G2Lex v1 assets.
-The exact `verify` command accepts only `.g2lex` assets, preventing an
-experimental reduction file from being mistaken for an exact compiled lexicon.
+Reduction assets use experimental G2Lex identities (`g2lex.asset.v3` and `g2lex.asset.v4`); readers also accept legacy `lexcompact.asset.v2`, `lexcompact.asset.v3`, and `lexcompact.asset.v4` files. They are not G2Lex v1 assets. The exact `verify` command accepts only `.g2lex` assets, preventing an experimental reduction file from being mistaken for an exact compiled lexicon.
 
 ## Benchmarks
 
@@ -180,7 +192,7 @@ Results are fixture-specific measurements. The project does not promise a
 particular compression ratio or performance advantage over SQLite without
 benchmark evidence.
 
-## Install and test
+## Development
 
 ```bash
 python -m pip install -e ".[dev]"

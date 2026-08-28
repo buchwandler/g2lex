@@ -26,14 +26,8 @@ def main():
 
     # Determine if we're being run from docs/ or from project root
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    if os.path.basename(script_dir) == "docs":
-        # Running from docs directory
-        build_dir = "_build"
-        source_dir = "."
-    else:
-        # Running from project root
-        build_dir = os.path.join("docs", "_build")
-        source_dir = "docs"
+    source_dir = script_dir
+    build_dir = os.path.join(script_dir, "_build")
 
     if len(sys.argv) < 2:
         target = "html"

@@ -29,8 +29,9 @@ from .selectors import (
     TreeSelector,
 )
 
-ASSET_FORMAT = "lexcompact.asset.v4"
+ASSET_FORMAT = "g2lex.asset.v4"
 ASSET_SCHEMA = 4
+LEGACY_ASSET_FORMATS = {(4, "lexcompact.asset.v4")}
 
 
 def _json(value: object) -> bytes:
@@ -142,8 +143,11 @@ def _selector_from_dict(value: dict[str, Any] | None):
 def loads(data: bytes | bytearray | memoryview | V4Container) -> ImplicitLexicon:
     container = data if isinstance(data, V4Container) else container_loads(data)
     manifest = json.loads(_section(container, "manifest.json"))
-    if (int(manifest.get("schema", -1)), manifest.get("format")) != (ASSET_SCHEMA, ASSET_FORMAT):
-        raise ValueError("unsupported Lexcompact V4 asset")
+    if (int(manifest.get("schema", -1)), manifest.get("format")) not in {
+        (ASSET_SCHEMA, ASSET_FORMAT),
+        *LEGACY_ASSET_FORMATS,
+    }:
+        raise ValueError("unsupported G2Lex reduction asset")
     source = SourceInfo(**manifest["source"])
     if "literals.binary-pool" in container:
         literals = BinaryPoolLiteralStore.deserialize(_section(container, "literals.binary-pool"))

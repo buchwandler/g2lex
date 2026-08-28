@@ -1,323 +1,158 @@
-# Validation record — G2Lex V3 MVP
+# Validation record: G2Lex 0.1.0 release candidate
 
-Date: 2026-08-28
+## Environment
 
-This record separates measurements executed in this sandbox from figures reported by
-the supplied KokoroG2P snapshot.
+- Repository: `g2lex`
+- Runtime used for local checks: CPython 3.13.14 on Linux
+- Runtime dependencies: none
+- Validation scope: the candidate workspace after the release-readiness fixes
 
-## 1. New KokoroG2P snapshot reconstruction
+## Source revision/tag
 
-The newly supplied Codecrate pack was reconstructed with its generated standard-library
-unpacker:
+- Current Git `HEAD`: `1f281aeae6ac7fb772f3120055fd786c1597ee9c`
+- Releaseledger stored snapshot: `4f34aba4434fe92331f68a52600f1dedf762ebc7`; it remains drifted because this candidate workspace is uncommitted.
+- Final signed `v0.1.0` tag: not created
+- GitHub Release: not created
+- PyPI publication: not performed
 
-```bash
-python -S context_kokorog2p.unpack.py context_kokorog2p.md \
-  -o kokorog2p_reconstructed_v3 \
-  --check-machine-header --strict --fail-on-warning --progress
-```
-
-Result: success. **539 files** were reconstructed. Machine-header/manifest validation
-passed and `--fail-on-warning` did not fail.
-
-The implementation basis inspected was:
+## Unit/integration tests
 
 ```text
-experiments/de_lexicon_entry_reduction/
+python -m pytest
+75 passed
 ```
 
-The newest material changes relevant to G2Lex V3 are:
+Recorded as taskledger check `check-0035`.
 
-- `lexreduce/resolver.py`: ephemeral recursive constituent resolution;
-- `lexreduce/segmentation.py`: compact deterministic integer `SegmentationScorer`;
-- recursive/scorer support in builder and runtime composer;
-- recursive/scorer serialization and reload;
-- optimizer propagation of linker/recursive/component/state/scorer settings;
-- experiment CLI flags for recursive constituents, recursive depth, and segmentation
-  scorer.
+## Coverage
 
-## 2. Upstream focused experiment tests
-
-Executed in the reconstructed KokoroG2P repository:
-
-```bash
-python -m pytest -q   experiments/de_lexicon_entry_reduction/tests/test_entry_reduction.py
-```
-
-Result:
+The configured whole-package branch coverage gate passed:
 
 ```text
-14 passed, 1 skipped
+python -m pytest --cov=g2lex --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=80
+75 passed
+Total coverage: 80.58%
 ```
 
-The skipped test is the opt-in full built-in-data test. The reconstructed portable
-snapshot does not contain:
+Recorded as taskledger check `check-0039`. Coverage targets the complete `g2lex`
+package and does not use ordinary coverage exclusions to hide missing tests.
+
+## Ruff/pre-commit
+
+- `python -m ruff check .`: passed, taskledger check `check-0043`
+- `python -m ruff format --check .`: passed, taskledger check `check-0044`
+- `pre-commit run --all-files`: passed, taskledger check `check-0046`
+
+## Compilation and warning-clean tests
+
+- `python -m compileall -q g2lex tests benchmarks examples scripts`: passed, taskledger check `check-0047`
+- `python -m pytest -W error::ResourceWarning -W error::pytest.PytestUnraisableExceptionWarning`: 74 passed, taskledger check `check-0037`
+
+The Gruut SQLite adapter and its fixture now close connections explicitly.
+
+## Package build
 
 ```text
-kokorog2p/de/data/de_gold.json
+python -m build
+Successfully built g2lex-0.1.0.tar.gz and g2lex-0.1.0-py3-none-any.whl
+python -m twine check dist/*
+Checking dist/g2lex-0.1.0-py3-none-any.whl: PASSED
+Checking dist/g2lex-0.1.0.tar.gz: PASSED
 ```
 
-Therefore the full 738,427-word run was not independently rerun here.
+Recorded as taskledger checks `check-0049` and `check-0050`.
 
-The reports contained in the supplied snapshot continue to state:
+## Wheel install smoke test
 
-| Metric                     | Source-reported result |
-| -------------------------- | ---------------------: |
-| baseline logical words     |                738,427 |
-| retained literal words     |                586,889 |
-| implicit generated words   |                151,538 |
-| literal-entry reduction    |                 20.52% |
-| per-generated-word recipes |                      0 |
-| missing words              |                      0 |
-| extra membership hits      |                      0 |
-| pronunciation mismatches   |                      0 |
-| variant-order mismatches   |                      0 |
-| target `<= 400,000`        |                not met |
+A clean virtual environment installed `dist/g2lex-0.1.0-py3-none-any.whl`.
+The installed command reported `g2lex 0.1.0` and completed a toy pack/verify
+round trip with 9 source entries, 9 asset entries, and zero mismatches.
 
-These are source-reported figures, not fresh V3 full-data measurements.
+## Sdist install smoke test
 
-## 3. Standalone V3 project layout
+A separate clean virtual environment installed `dist/g2lex-0.1.0.tar.gz`.
+The installed command reported `g2lex 0.1.0` and completed the same lossless toy
+pack/verify round trip with zero mismatches.
 
-The project is intentionally flat:
+Both artifact smoke tests are recorded as taskledger check `check-0051`.
+
+## CLI smoke test
+
+The source CLI tests cover pack, lookup, inspect, export, convert, diff, restore,
+verify, and experimental reduction verification. The final full suite and
+coverage run passed.
+
+## G2Lex v1 exact round trip
+
+The exact source fixture round trips through the stable `G2LX` container. The
+verification result reports:
+
+```json
+{
+  "lossless": true,
+  "source_entry_count": 9,
+  "asset_entry_count": 9,
+  "missing": 0,
+  "extra": 0,
+  "shape_mismatch": 0,
+  "value_mismatch": 0,
+  "tag_mismatch": 0,
+  "null_mismatch": 0,
+  "variant_order_mismatch": 0,
+  "logical_sha256_match": true
+}
+```
+
+## Corruption/integrity tests
+
+The test suite covers corrupt headers, invalid varints, bounded decompression,
+trailing compressed data, memory-mapped lifetimes, double close behavior, and
+concurrent exact reads.
+
+## Docs build
+
+The MyST documentation tree now has `docs/index.md`, declares `myst-parser`, and
+builds with warnings treated as errors:
 
 ```text
-g2lex/
-benchmarks/
-tests/
-examples/
-pyproject.toml
+sphinx-build -W -b html docs docs/_build/html
+build succeeded
 ```
 
-Confirmed: **no `src/` directory exists**.
+The build passed from the repository root and `docs/make.py` passed from both the
+repository root and the `docs` directory. These are recorded as taskledger checks
+`check-0048`, `check-0014`, and `check-0015`.
 
-V3 adds:
+## Python-version CI matrix
 
-```text
-g2lex/resolver.py
-g2lex/segmentation.py
-```
+The GitHub Actions test matrix remains configured for Python 3.10, 3.11, 3.12,
+3.13, and 3.14. The coverage, pre-commit, documentation, and package jobs are
+configured in CI, but remote GitHub Actions results are not available in this
+local validation record.
 
-The single-file runtime format is now:
+## Known experimental components
 
-```text
-format = g2lex.asset.v3
-schema = 3
-```
+Experimental reduction remains separate from stable G2Lex v1. Newly written
+reduction assets use `g2lex.asset.v3` and `g2lex.asset.v4`. Readers retain support
+for legacy `lexcompact.asset.v2`, `lexcompact.asset.v3`, and
+`lexcompact.asset.v4` identities. Experimental reduction APIs, selectors, and
+reconstruction behavior may change during the alpha series.
 
-The V3 loader also accepts `g2lex.asset.v2` / schema 2 and defaults the newly
-introduced runtime fields to non-recursive/no-scorer behavior.
+## External source/full benchmark evidence
 
-## 4. Standalone tests
+The repository retains its deterministic benchmark fixtures and source locks.
+Network-dependent full-source benchmark execution is not part of this offline
+candidate validation.
 
-Collected tests:
+## Release decision
 
-```text
-benchmarks/de_lexicon_entry_reduction/tests/test_download_setup.py: 3
-benchmarks/de_lexicon_entry_reduction/tests/test_entry_reduction.py: 15
-tests/test_core.py: 7
-tests/test_io_cli.py: 2
-```
+**Release candidate only. Do not publish.**
 
-Total: **27 tests**.
+The local release gates are green for tests, whole-package coverage, warnings,
+formatting, pre-commit, documentation, package metadata, wheel, sdist, and
+installed artifact smoke tests. GitHub Actions matrix results and final PyPI name
+availability still require release-day confirmation.
 
-Executed:
-
-```bash
-python -m pytest -q
-```
-
-Result: **27 passed**.
-
-Benchmark-only subset:
-
-```bash
-python -m pytest -q benchmarks/de_lexicon_entry_reduction/tests
-```
-
-Result: **18 passed**.
-
-Coverage includes:
-
-- exact ordered variants;
-- exact positive/negative membership;
-- deterministic DAFSA serialization;
-- deterministic `.lxc` serialization;
-- zero generated-word recipe table;
-- German compound/boundary/linker rules;
-- selector behavior;
-- utility optimizer behavior;
-- V3 ephemeral recursive constituents;
-- V3 segmentation-scorer serialization/reload;
-- independent verification;
-- pinned download metadata and explicit network gating;
-- CLI round trips.
-
-## 5. V3 recursive reconstruction smoke test
-
-Synthetic logical source:
-
-```text
-A   -> a
-B   -> b
-C   -> c
-AB  -> ab
-ABC -> abc
-```
-
-With:
-
-```python
-ReductionConfig(
-    max_components=2,
-    recursive_components=True,
-    max_recursive_depth=4,
-    segmentation_scorer=SegmentationScorer(),
-)
-```
-
-Measured:
-
-| Metric                             |     Result |
-| ---------------------------------- | ---------: |
-| baseline words                     |          5 |
-| retained literals                  |          3 |
-| implicit generated words           |          2 |
-| runtime per-generated-word recipes |          0 |
-| `ABC` after serialized reload      | `("abc",)` |
-| exact verification                 |     passed |
-
-`AB` is omitted and can still act as an **ephemeral reconstructed constituent** while
-regenerating `ABC`. No `AB -> recipe` record is persisted.
-
-This synthetic result validates the mechanism only; it is not a claim about real-language
-reduction ratios.
-
-## G2Lex v1 exact typed runtime smoke validation
-
-The G2Lex v1 path was added without removing the V3/V4 reduction loaders. The focused G2Lex v1 suite covers scalar, ordered-list, tagged, explicit-null, literal `None`, Unicode, empty-string, and word-only values; deterministic packing; virtual aliases; raw layer precedence; mmap loading; atomic self-verification; export; and corruption rejection.
-
-```bash
-python -m pytest -q
-python -m ruff check g2lex tests
-```
-
-Runtime measurements can be collected with the scripts in `benchmarks/lexicon_runtime/`. They report load, lookup, package-size, and Kokoro compatibility metrics. Performance targets are machine-dependent and are not substituted for logical verification.
-
-## 6. CLI/benchmark smoke test
-
-Executed against the repository-local German-style toy fixture:
-
-```bash
-python -m g2lex.cli reduce   benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv   /tmp/toy-recursive.lxc   --format tsv   --profile de-linkers   --recursive-components   --segmentation-scorer v2
-
-python -m g2lex.cli verify   benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv   /tmp/toy-recursive.lxc   --format tsv
-```
-
-Measured:
-
-| Metric                             | Result |
-| ---------------------------------- | -----: |
-| logical source words               |      9 |
-| resident literal words             |      6 |
-| implicit words                     |      3 |
-| literal-entry reduction            | 33.33% |
-| runtime per-generated-word recipes |      0 |
-| missing words                      |      0 |
-| false-positive membership hits     |      0 |
-| pronunciation mismatches           |      0 |
-| variant-order mismatches           |      0 |
-| lossless                           |    yes |
-
-The benchmark reproduction command with `--boundary-rules v2`, German linkers,
-recursive constituents, and segmentation scorer also completed successfully and
-reloaded/verified its `.lxc` candidate independently.
-
-A small offline matrix run completed and wrote `matrix.json` plus independently
-reloadable candidates.
-
-## 7. Download setup
-
-The standalone benchmark manifest retains the current supplied KokoroG2P immutable
-remote coordinates, sizes, and SHA-256 values for:
-
-- `gruut_espeak`;
-- `crane_wiktionary`.
-
-The repository adds only the local `toy` source to the copied manifest.
-
-Executed without `--download`:
-
-```bash
-python -m benchmarks.de_lexicon_entry_reduction.download_sources   --source gruut_espeak
-```
-
-Result: exit code 2 with the expected explicit-network refusal.
-
-Remote download itself was not performed in this sandbox.
-
-## 8. Memory harness
-
-The fresh-process memory/lookup benchmark command runs successfully on the toy
-candidate, including generated-word latency metrics.
-
-The toy process reported a candidate RSS delta of zero at the operating system's
-measurement granularity. This is **not meaningful evidence** of production memory
-savings and must not be extrapolated. Large-data RSS remains unmeasured here because
-the full built-in German asset is absent.
-
-## 9. Packaging and dynamic versioning
-
-`pyproject.toml` discovers packages from the repository root and declares a dynamic
-version resolved by `g2lex._version.__version__`.
-
-V3 fallback version:
-
-```text
-0.3.0.dev0
-```
-
-Executed offline:
-
-```bash
-python -m pip wheel . --no-build-isolation --no-deps -w /tmp/g2lex-v3-wheel
-python -m pip install . --no-build-isolation --no-deps   --target /tmp/g2lex-v3-install
-```
-
-Result: successful build/install of:
-
-```text
-g2lex-0.3.0.dev0-py3-none-any.whl
-```
-
-An import from the installed target successfully:
-
-- built a recursive V3 candidate;
-- serialized/reloaded it;
-- reconstructed `ABC` as `("abc",)`;
-- reported `per_generated_word_recipe_count == 0`.
-
-Backward-compatibility smoke test:
-
-1. a V2 source tree generated a `g2lex.asset.v2` file;
-2. the installed V3 loader opened it;
-3. lookup returned the exact expected pronunciation;
-4. V2 correctly defaulted to `recursive_components=False` and no segmentation scorer.
-
-## 10. Boundaries of the evidence
-
-Proven in this sandbox:
-
-- strict reconstruction of the newly supplied KokoroG2P pack;
-- upstream V3-focused experiment tests pass;
-- V3 recursive generated constituents work after serialization/reload;
-- V3 segmentation scorer survives serialization/reload;
-- zero per-generated-word runtime recipes remains enforced;
-- the standalone full test suite passes;
-- the benchmark/download/test harness operates offline;
-- the no-`src/` package builds and installs;
-- V2 runtime assets remain loadable.
-
-Not independently proven here:
-
-- a new full 738,427-word V3 German reduction measurement;
-- production memory savings on that full lexicon;
-- remote-source downloads in this sandbox.
+Releaseledger v0.1.0 is in `candidate` status with no release date. The changelog
+was regenerated as an unreleased candidate section. No PyPI upload, GitHub
+Release, or signed release tag was performed.

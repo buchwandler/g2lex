@@ -17,9 +17,9 @@ from .prefix_index import LiteralPrefixIndex
 from .rules import RuleSet
 from .segmentation import SegmentationScorer
 
-ASSET_FORMAT = "lexcompact.asset.v3"
+ASSET_FORMAT = "g2lex.asset.v3"
 ASSET_SCHEMA = 3
-LEGACY_ASSET_FORMATS = {(2, "lexcompact.asset.v2")}
+LEGACY_ASSET_FORMATS = {(2, "lexcompact.asset.v2"), (3, "lexcompact.asset.v3")}
 _FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 
 
@@ -126,7 +126,7 @@ def loads(data: bytes) -> ImplicitLexicon:
             schema,
             asset_format,
         ) not in LEGACY_ASSET_FORMATS:
-            raise ValueError("unsupported lexcompact asset")
+            raise ValueError("unsupported G2Lex reduction asset")
         source = SourceInfo(**manifest["source"])
         literals = LiteralLexicon(json.loads(archive.read("literals.json")))
         index = LiteralPrefixIndex.from_dict(json.loads(archive.read("literal-index.json")))

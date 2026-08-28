@@ -428,6 +428,7 @@ Suggested KokoroG2P migration:
 ```python
 from g2lex import load_traversable
 
+
 @lru_cache(maxsize=1)
 def _load_gold_dictionary(load_gold: bool = True) -> Mapping[str, str]:
     if not load_gold:

@@ -37,7 +37,7 @@ dynamic = ["version"]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.12", "tomli>=2; python_version < '3.11'"]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.12", "tomli>=2; python_version < '3.11'"]
 benchmark = ["tomli>=2; python_version < '3.11'"]
 
 [project.scripts]
@@ -46,6 +46,8 @@ g2lex = "g2lex.cli:main"
 [project.urls]
 Repository = "https://github.com/buchwandler/g2lex"
 Issues = "https://github.com/buchwandler/g2lex/issues"
+Changelog = "https://github.com/buchwandler/g2lex/blob/main/docs/changelog.md"
+Documentation = "https://github.com/buchwandler/g2lex/tree/main/docs"
 
 [tool.setuptools.dynamic]
 version = {attr = "g2lex._version.__version__"}
