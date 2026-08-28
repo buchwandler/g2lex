@@ -1,2 +1,3 @@
-from . import StaticPrioritySelector, PrioritySelector
+from . import PrioritySelector, StaticPrioritySelector
+
 __all__ = ["PrioritySelector", "StaticPrioritySelector"]

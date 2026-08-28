@@ -60,18 +60,18 @@ Therefore the full 738,427-word run was not independently rerun here.
 
 The reports contained in the supplied snapshot continue to state:
 
-| Metric | Source-reported result |
-| --- | ---: |
-| baseline logical words | 738,427 |
-| retained literal words | 586,889 |
-| implicit generated words | 151,538 |
-| literal-entry reduction | 20.52% |
-| per-generated-word recipes | 0 |
-| missing words | 0 |
-| extra membership hits | 0 |
-| pronunciation mismatches | 0 |
-| variant-order mismatches | 0 |
-| target `<= 400,000` | not met |
+| Metric                     | Source-reported result |
+| -------------------------- | ---------------------: |
+| baseline logical words     |                738,427 |
+| retained literal words     |                586,889 |
+| implicit generated words   |                151,538 |
+| literal-entry reduction    |                 20.52% |
+| per-generated-word recipes |                      0 |
+| missing words              |                      0 |
+| extra membership hits      |                      0 |
+| pronunciation mismatches   |                      0 |
+| variant-order mismatches   |                      0 |
+| target `<= 400,000`        |                not met |
 
 These are source-reported figures, not fresh V3 full-data measurements.
 
@@ -176,20 +176,31 @@ ReductionConfig(
 
 Measured:
 
-| Metric | Result |
-| --- | ---: |
-| baseline words | 5 |
-| retained literals | 3 |
-| implicit generated words | 2 |
-| runtime per-generated-word recipes | 0 |
-| `ABC` after serialized reload | `("abc",)` |
-| exact verification | passed |
+| Metric                             |     Result |
+| ---------------------------------- | ---------: |
+| baseline words                     |          5 |
+| retained literals                  |          3 |
+| implicit generated words           |          2 |
+| runtime per-generated-word recipes |          0 |
+| `ABC` after serialized reload      | `("abc",)` |
+| exact verification                 |     passed |
 
 `AB` is omitted and can still act as an **ephemeral reconstructed constituent** while
 regenerating `ABC`. No `AB -> recipe` record is persisted.
 
 This synthetic result validates the mechanism only; it is not a claim about real-language
 reduction ratios.
+
+## V5 exact typed runtime smoke validation
+
+The V5 path was added without removing the V3/V4 reduction loaders. The focused V5 suite covers scalar, ordered-list, tagged, explicit-null, literal `None`, Unicode, empty-string, and word-only values; deterministic packing; virtual aliases; raw layer precedence; mmap loading; atomic self-verification; export; and corruption rejection.
+
+```bash
+python -m pytest -q
+python -m ruff check lexcompact tests
+```
+
+Runtime measurements can be collected with the scripts in `benchmarks/lexicon_runtime/`. They report load, lookup, package-size, and Kokoro compatibility metrics. Performance targets are machine-dependent and are not substituted for logical verification.
 
 ## 6. CLI/benchmark smoke test
 
@@ -203,18 +214,18 @@ python -m lexcompact.cli verify   benchmarks/de_lexicon_entry_reduction/fixtures
 
 Measured:
 
-| Metric | Result |
-| --- | ---: |
-| logical source words | 9 |
-| resident literal words | 6 |
-| implicit words | 3 |
-| literal-entry reduction | 33.33% |
-| runtime per-generated-word recipes | 0 |
-| missing words | 0 |
-| false-positive membership hits | 0 |
-| pronunciation mismatches | 0 |
-| variant-order mismatches | 0 |
-| lossless | yes |
+| Metric                             | Result |
+| ---------------------------------- | -----: |
+| logical source words               |      9 |
+| resident literal words             |      6 |
+| implicit words                     |      3 |
+| literal-entry reduction            | 33.33% |
+| runtime per-generated-word recipes |      0 |
+| missing words                      |      0 |
+| false-positive membership hits     |      0 |
+| pronunciation mismatches           |      0 |
+| variant-order mismatches           |      0 |
+| lossless                           |    yes |
 
 The benchmark reproduction command with `--boundary-rules v2`, German linkers,
 recursive constituents, and segmentation scorer also completed successfully and

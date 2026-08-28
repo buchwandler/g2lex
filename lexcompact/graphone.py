@@ -1,10 +1,11 @@
 """Pure-data bounded graphone model and decoder."""
+
 from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Iterable, Mapping
 
 from .runtime import ReconstructionCandidate
 from .training.alignment import align
@@ -49,24 +50,43 @@ class GraphoneModel:
         return "".join(output)
 
     def as_dict(self) -> dict[str, object]:
-        return {"version": "graphone-v1", "order": self.order, "max_graphemes_per_unit": self.max_graphemes_per_unit, "max_pronunciation_codepoints_per_unit": self.max_pronunciation_codepoints_per_unit, "beam_width": self.beam_width, "max_states": self.max_states, "max_bytes": self.max_bytes, "units": [[key, value] for key, value in self.units]}
+        return {
+            "version": "graphone-v1",
+            "order": self.order,
+            "max_graphemes_per_unit": self.max_graphemes_per_unit,
+            "max_pronunciation_codepoints_per_unit": self.max_pronunciation_codepoints_per_unit,
+            "beam_width": self.beam_width,
+            "max_states": self.max_states,
+            "max_bytes": self.max_bytes,
+            "units": [[key, value] for key, value in self.units],
+        }
 
     def serialize(self) -> bytes:
-        return json.dumps(self.as_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+        return json.dumps(
+            self.as_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode()
 
     @property
     def serialized_bytes(self) -> int:
         return len(self.serialize())
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "GraphoneModel":
-        model = cls(tuple((str(key), str(output)) for key, output in value.get("units", ())), int(value.get("order", 1)), int(value.get("max_graphemes_per_unit", 2)), int(value.get("max_pronunciation_codepoints_per_unit", 4)), int(value.get("beam_width", 8)), int(value.get("max_states", 10000)), int(value.get("max_bytes", 1024 * 1024)))
+    def from_dict(cls, value: Mapping[str, object]) -> GraphoneModel:
+        model = cls(
+            tuple((str(key), str(output)) for key, output in value.get("units", ())),
+            int(value.get("order", 1)),
+            int(value.get("max_graphemes_per_unit", 2)),
+            int(value.get("max_pronunciation_codepoints_per_unit", 4)),
+            int(value.get("beam_width", 8)),
+            int(value.get("max_states", 10000)),
+            int(value.get("max_bytes", 1024 * 1024)),
+        )
         if model.serialized_bytes > model.max_bytes:
             raise ValueError("graphone model exceeds byte budget")
         return model
 
     @classmethod
-    def deserialize(cls, data: bytes) -> "GraphoneModel":
+    def deserialize(cls, data: bytes) -> GraphoneModel:
         return cls.from_dict(json.loads(data))
 
 
@@ -80,15 +100,29 @@ def train_graphone(
 ) -> GraphoneModel:
     counts: dict[str, Counter[str]] = defaultdict(Counter)
     for spelling, pronunciation in pairs:
-        for grapheme, output in align(spelling, pronunciation, max_output_chunk_length=max_pronunciation_codepoints_per_unit):
+        for grapheme, output in align(
+            spelling, pronunciation, max_output_chunk_length=max_pronunciation_codepoints_per_unit
+        ):
             if len(grapheme) <= max_graphemes_per_unit:
                 counts[grapheme][output] += 1
     units = [(key, counts[key].most_common(1)[0][0]) for key in counts]
     units.sort()
-    model = GraphoneModel(tuple(units), order, max_graphemes_per_unit, max_pronunciation_codepoints_per_unit, max_bytes=max_bytes)
+    model = GraphoneModel(
+        tuple(units),
+        order,
+        max_graphemes_per_unit,
+        max_pronunciation_codepoints_per_unit,
+        max_bytes=max_bytes,
+    )
     while model.serialized_bytes > max_bytes and units:
         units.pop()
-        model = GraphoneModel(tuple(units), order, max_graphemes_per_unit, max_pronunciation_codepoints_per_unit, max_bytes=max_bytes)
+        model = GraphoneModel(
+            tuple(units),
+            order,
+            max_graphemes_per_unit,
+            max_pronunciation_codepoints_per_unit,
+            max_bytes=max_bytes,
+        )
     if model.serialized_bytes > max_bytes:
         raise ValueError("graphone model budget is too small")
     return model
@@ -103,7 +137,15 @@ class GraphoneReconstructor:
 
     def candidates(self, word: str, context: object = None) -> tuple[ReconstructionCandidate, ...]:
         prediction = self.model.predict(word)
-        return (ReconstructionCandidate(self.stage_id, (prediction,), score=0, analysis_kind="graphone"),) if prediction else ()
+        return (
+            (
+                ReconstructionCandidate(
+                    self.stage_id, (prediction,), score=0, analysis_kind="graphone"
+                ),
+            )
+            if prediction
+            else ()
+        )
 
     def as_dict(self):
         return {"stage_id": self.stage_id, "version": self.version, "model": self.model.as_dict()}

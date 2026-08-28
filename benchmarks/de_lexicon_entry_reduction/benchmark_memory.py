@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Measure fresh-process load, resident memory, and lookup costs."""
+
 from __future__ import annotations
 
 import argparse
@@ -15,7 +16,16 @@ from pathlib import Path
 
 
 def _snapshot() -> dict[str, int | None]:
-    values: dict[str, int | None] = {"VmRSS": None, "VmHWM": None, "Rss": None, "Pss": None, "Private_Clean": None, "Private_Dirty": None, "Shared_Clean": None, "Shared_Dirty": None}
+    values: dict[str, int | None] = {
+        "VmRSS": None,
+        "VmHWM": None,
+        "Rss": None,
+        "Pss": None,
+        "Private_Clean": None,
+        "Private_Dirty": None,
+        "Shared_Clean": None,
+        "Shared_Dirty": None,
+    }
     try:
         for line in Path("/proc/self/status").read_text().splitlines():
             key, _, value = line.partition(":")
@@ -35,15 +45,20 @@ def _snapshot() -> dict[str, int | None]:
 
 def _faults() -> dict[str, int]:
     usage = resource.getrusage(resource.RUSAGE_SELF)
-    return {"major": int(usage.ru_majflt), "minor": int(usage.ru_minflt), "maxrss": int(usage.ru_maxrss * (1 if platform.system() == "Darwin" else 1024))}
+    return {
+        "major": int(usage.ru_majflt),
+        "minor": int(usage.ru_minflt),
+        "maxrss": int(usage.ru_maxrss * (1 if platform.system() == "Darwin" else 1024)),
+    }
 
 
 def _diff(after: dict[str, int | None], before: dict[str, int | None]) -> dict[str, int | None]:
     return {
-        key: after[key] - before[key] if after[key] is not None and before[key] is not None else None
+        key: after[key] - before[key]
+        if after[key] is not None and before[key] is not None
+        else None
         for key in after
     }
-
 
 
 def _saved(baseline: int | None, candidate: int | None) -> tuple[int | None, float | None]:
@@ -53,30 +68,39 @@ def _saved(baseline: int | None, candidate: int | None) -> tuple[int | None, flo
     rate = saved / baseline if baseline else None
     return saved, rate
 
+
 def _worker(kind: str, run: Path, source: str, data_root: Path | None, path: Path | None) -> None:
     before = _snapshot()
     faults_before = _faults()
     started = time.perf_counter()
     if kind == "candidate":
         from lexcompact.asset import load
+
         candidate = load(run / "candidate.lxc")
         count = candidate.membership.word_count
     else:
         from .sources import load_source
+
         loaded = load_source(source, data_root=data_root, path=path)
         count = len(loaded.entries)
     after = _snapshot()
     faults_after = _faults()
-    print(json.dumps({
-        "process_start": before,
-        "post_load": after,
-        "memory_delta": _diff(after, before),
-        "page_faults": {key: faults_after[key] - faults_before[key] for key in ("major", "minor")},
-        "ru_maxrss": faults_after["maxrss"],
-        "load_ms": (time.perf_counter() - started) * 1000,
-        "word_count": count,
-        "measurement": "fresh-process-os-warm",
-    }))
+    print(
+        json.dumps(
+            {
+                "process_start": before,
+                "post_load": after,
+                "memory_delta": _diff(after, before),
+                "page_faults": {
+                    key: faults_after[key] - faults_before[key] for key in ("major", "minor")
+                },
+                "ru_maxrss": faults_after["maxrss"],
+                "load_ms": (time.perf_counter() - started) * 1000,
+                "word_count": count,
+                "measurement": "fresh-process-os-warm",
+            }
+        )
+    )
 
 
 def _stratified(values: Iterable[str], size: int, seed: int) -> tuple[str, ...]:
@@ -94,7 +118,10 @@ def _stratified(values: Iterable[str], size: int, seed: int) -> tuple[str, ...]:
             result.extend(group)
         else:
             stride = len(group) / take
-            result.extend(group[min(len(group) - 1, int(index * stride + (seed % 3) / 3))] for index in range(take))
+            result.extend(
+                group[min(len(group) - 1, int(index * stride + (seed % 3) / 3))]
+                for index in range(take)
+            )
     return tuple(dict.fromkeys(result))[:size]
 
 
@@ -107,11 +134,16 @@ def _percentile(values: list[float], percentile: int) -> float:
 def _lookup_metrics(run: Path, sample_size: int, seed: int) -> dict[str, object]:
     from lexcompact.asset import load
     from lexcompact.verify import adversarial_misses
+
     candidate = load(run / "candidate.lxc")
     all_words = tuple(candidate.membership.iter_words())
     literal_words = tuple(candidate.literals)
     generated = tuple(word for word in all_words if word not in candidate.literals)
-    categories = {"literal": literal_words, "generated": generated, "miss": adversarial_misses(all_words)}
+    categories = {
+        "literal": literal_words,
+        "generated": generated,
+        "miss": adversarial_misses(all_words),
+    }
     metrics: dict[str, object] = {"sample_size_requested": sample_size, "sample_counts": {}}
     for name, words in categories.items():
         sample = _stratified(words, sample_size, seed)
@@ -132,8 +164,20 @@ def _lookup_metrics(run: Path, sample_size: int, seed: int) -> dict[str, object]
     return metrics
 
 
-def _run_worker(kind: str, run: Path, source: str, data_root: Path | None, path: Path | None) -> dict[str, object]:
-    command = [sys.executable, "-m", "benchmarks.de_lexicon_entry_reduction.benchmark_memory", "--worker", kind, "--run", str(run), "--source", source]
+def _run_worker(
+    kind: str, run: Path, source: str, data_root: Path | None, path: Path | None
+) -> dict[str, object]:
+    command = [
+        sys.executable,
+        "-m",
+        "benchmarks.de_lexicon_entry_reduction.benchmark_memory",
+        "--worker",
+        kind,
+        "--run",
+        str(run),
+        "--source",
+        source,
+    ]
     if data_root:
         command.extend(("--data-root", str(data_root)))
     if path:
@@ -142,19 +186,36 @@ def _run_worker(kind: str, run: Path, source: str, data_root: Path | None, path:
     return json.loads(completed.stdout)
 
 
-def benchmark(run: Path, *, source: str = "builtin", data_root: Path | None = None, path: Path | None = None, sample_size: int = 1000, repetitions: int = 3, seed: int = 0) -> dict[str, object]:
+def benchmark(
+    run: Path,
+    *,
+    source: str = "builtin",
+    data_root: Path | None = None,
+    path: Path | None = None,
+    sample_size: int = 1000,
+    repetitions: int = 3,
+    seed: int = 0,
+) -> dict[str, object]:
     if sample_size < 1 or repetitions < 1:
         raise ValueError("sample_size and repetitions must be positive")
-    baseline_runs = [_run_worker("baseline", run, source, data_root, path) for _ in range(repetitions)]
-    candidate_runs = [_run_worker("candidate", run, source, data_root, path) for _ in range(repetitions)]
+    baseline_runs = [
+        _run_worker("baseline", run, source, data_root, path) for _ in range(repetitions)
+    ]
+    candidate_runs = [
+        _run_worker("candidate", run, source, data_root, path) for _ in range(repetitions)
+    ]
     lookup = _lookup_metrics(run, sample_size, seed)
     baseline_loads = [float(item["load_ms"]) for item in baseline_runs]
     candidate_loads = [float(item["load_ms"]) for item in candidate_runs]
     candidate_memory = candidate_runs[-1]["post_load"]
     baseline_memory_delta = baseline_runs[-1]["memory_delta"]
     candidate_memory_delta = candidate_runs[-1]["memory_delta"]
-    rss_saved_bytes, rss_saved_rate = _saved(baseline_memory_delta.get("VmRSS"), candidate_memory_delta.get("VmRSS"))
-    pss_saved_bytes, pss_saved_rate = _saved(baseline_memory_delta.get("Pss"), candidate_memory_delta.get("Pss"))
+    rss_saved_bytes, rss_saved_rate = _saved(
+        baseline_memory_delta.get("VmRSS"), candidate_memory_delta.get("VmRSS")
+    )
+    pss_saved_bytes, pss_saved_rate = _saved(
+        baseline_memory_delta.get("Pss"), candidate_memory_delta.get("Pss")
+    )
     return {
         "baseline_load_ms_median": statistics.median(baseline_loads),
         "candidate_load_ms_median": statistics.median(candidate_loads),
@@ -194,7 +255,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.worker:
         _worker(args.worker, args.run, args.source, args.data_root, args.path)
         return 0
-    result = benchmark(args.run, source=args.source, data_root=args.data_root, path=args.path, sample_size=args.sample_size, repetitions=args.repetitions, seed=args.seed)
+    result = benchmark(
+        args.run,
+        source=args.source,
+        data_root=args.data_root,
+        path=args.path,
+        sample_size=args.sample_size,
+        repetitions=args.repetitions,
+        seed=args.seed,
+    )
     destination = args.output or args.run / "runtime.json"
     destination.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))

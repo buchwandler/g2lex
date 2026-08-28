@@ -1,12 +1,13 @@
 """Exact literal stores and reversible pronunciation storage codecs."""
+
 from __future__ import annotations
 
-import json
 import struct
 from bisect import bisect_left
 from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
+from itertools import pairwise
 from typing import Any
 
 from .model import LiteralLexicon, LiteralStore, PronunciationTuple
@@ -61,7 +62,9 @@ class BinaryPoolLiteralStore:
         value_pool: bytes | memoryview | None = None,
     ) -> None:
         if values is not None:
-            items = sorted((str(key), tuple(str(item) for item in raw)) for key, raw in values.items())
+            items = sorted(
+                (str(key), tuple(str(item) for item in raw)) for key, raw in values.items()
+            )
             self._keys = tuple(key for key, _ in items)
             encoded_keys = [key.encode("utf-8") for key in self._keys]
             offsets = [0]
@@ -76,19 +79,27 @@ class BinaryPoolLiteralStore:
             self._value_offsets = tuple(value_offsets_mut)
             self._value_pool = b"".join(payloads)
         else:
-            if keys is None or key_offsets is None or key_pool is None or value_offsets is None or value_pool is None:
+            if (
+                keys is None
+                or key_offsets is None
+                or key_pool is None
+                or value_offsets is None
+                or value_pool is None
+            ):
                 raise TypeError("pool arrays are required when values are absent")
             self._keys = keys
             self._key_offsets = key_offsets
             self._key_pool = key_pool
             self._value_offsets = value_offsets
             self._value_pool = value_pool
-        if len(self._keys) + 1 != len(self._key_offsets) or len(self._keys) + 1 != len(self._value_offsets):
+        if len(self._keys) + 1 != len(self._key_offsets) or len(self._keys) + 1 != len(
+            self._value_offsets
+        ):
             raise ValueError("pool offset arrays do not match key count")
         self._serialized: bytes | None = None
 
     @classmethod
-    def from_mapping(cls, values: Mapping[str, Iterable[str]]) -> "BinaryPoolLiteralStore":
+    def from_mapping(cls, values: Mapping[str, Iterable[str]]) -> BinaryPoolLiteralStore:
         return cls(values)
 
     def _position(self, word: str) -> int:
@@ -144,14 +155,16 @@ class BinaryPoolLiteralStore:
             header = struct.pack("<4sIII", b"LIT2", 2, len(self._keys), len(self._key_pool))
             offsets = struct.pack(f"<{len(self._key_offsets)}I", *self._key_offsets)
             values = struct.pack(f"<{len(self._value_offsets)}I", *self._value_offsets)
-            self._serialized = header + offsets + values + bytes(self._key_pool) + bytes(self._value_pool)
+            self._serialized = (
+                header + offsets + values + bytes(self._key_pool) + bytes(self._value_pool)
+            )
         return self._serialized
 
     def serialize_sections(self) -> Mapping[str, bytes]:
         return {"literals.binary-pool": self.serialize()}
 
     @classmethod
-    def deserialize(cls, data: bytes | bytearray | memoryview) -> "BinaryPoolLiteralStore":
+    def deserialize(cls, data: bytes | bytearray | memoryview) -> BinaryPoolLiteralStore:
         view = memoryview(data)
         if len(view) < 16 or bytes(view[:4]) != b"LIT2":
             raise ValueError("invalid binary literal pool header")
@@ -166,11 +179,15 @@ class BinaryPoolLiteralStore:
         value_offsets = struct.unpack_from(f"<{count + 1}I", view, 16 + 4 * (count + 1))
         key_start = table_end
         value_start = key_start + key_size
-        if value_start > len(view) or key_offsets[-1] != key_size or value_offsets[-1] != len(view) - value_start:
+        if (
+            value_start > len(view)
+            or key_offsets[-1] != key_size
+            or value_offsets[-1] != len(view) - value_start
+        ):
             raise ValueError("invalid binary literal pool ranges")
         key_pool = view[key_start:value_start]
         keys: list[str] = []
-        for start, end in zip(key_offsets, key_offsets[1:]):
+        for start, end in pairwise(key_offsets):
             try:
                 keys.append(bytes(key_pool[start:end]).decode("utf-8"))
             except UnicodeDecodeError as exc:
@@ -231,7 +248,7 @@ class StringInterner:
     values: tuple[str, ...]
 
     @classmethod
-    def from_values(cls, values: Iterable[str]) -> "StringInterner":
+    def from_values(cls, values: Iterable[str]) -> StringInterner:
         return cls(tuple(sorted(set(values))))
 
     def encode(self, value: str) -> int:
@@ -253,8 +270,8 @@ class VariantTupleInterner:
     values: tuple[PronunciationTuple, ...]
 
     @classmethod
-    def from_values(cls, values: Iterable[PronunciationTuple]) -> "VariantTupleInterner":
-        return cls(tuple(sorted(set(tuple(item) for item in values))))
+    def from_values(cls, values: Iterable[PronunciationTuple]) -> VariantTupleInterner:
+        return cls(tuple(sorted({tuple(item) for item in values})))
 
     def encode(self, value: PronunciationTuple) -> int:
         return self.values.index(value)
@@ -274,7 +291,7 @@ class RePairCodec:
         dictionary: list[tuple[int, int]] = []
         next_id = 256
         for _ in range(self.max_pairs):
-            counts = Counter(zip(sequence, sequence[1:]))
+            counts = Counter(pairwise(sequence))
             if not counts:
                 break
             pair, support = min(counts.items(), key=lambda item: (-item[1], item[0]))
@@ -334,7 +351,11 @@ class RePairCodec:
     def accounting(self, data: bytes) -> dict[str, int]:
         encoded = self.encode(data)
         dictionary_size = struct.unpack_from("<I", encoded, 4)[0]
-        return {"input_bytes": len(data), "encoded_bytes": len(encoded), "dictionary_bytes": dictionary_size * 4}
+        return {
+            "input_bytes": len(data),
+            "encoded_bytes": len(encoded),
+            "dictionary_bytes": dictionary_size * 4,
+        }
 
 
 class SymbolCodec:
@@ -365,7 +386,10 @@ class SymbolCodec:
     def decode(self, data: bytes) -> str:
         if len(data) % self.width:
             raise ValueError("truncated symbol payload")
-        return "".join(self.symbols[int.from_bytes(data[index : index + self.width], "little")] for index in range(0, len(data), self.width))
+        return "".join(
+            self.symbols[int.from_bytes(data[index : index + self.width], "little")]
+            for index in range(0, len(data), self.width)
+        )
 
 
 class TokenSpacedCodec(SymbolCodec):
@@ -388,7 +412,10 @@ class TokenSpacedCodec(SymbolCodec):
     def decode_tokens(self, data: bytes) -> tuple[str, ...]:
         if len(data) % self.width:
             raise ValueError("truncated token payload")
-        return tuple(self.symbols[int.from_bytes(data[index : index + self.width], "little")] for index in range(0, len(data), self.width))
+        return tuple(
+            self.symbols[int.from_bytes(data[index : index + self.width], "little")]
+            for index in range(0, len(data), self.width)
+        )
 
 
 # Compatibility and discoverability aliases.
@@ -400,8 +427,23 @@ VariantInterner = VariantTupleInterner
 SymbolU8Codec = SymbolCodec
 
 __all__ = [
-    "BinaryPoolLiteralStore", "BinaryPoolStore", "FrontCodedLiteralStore", "FrontCodedStore",
-    "FSTLiteralStore", "InternedLiteralStore", "LoudsFSTLiteralStore", "LiteralLexicon", "LiteralStore",
-    "MarisaLiteralStore", "PronunciationInterner", "RePair", "RePairCodec", "StringInterner",
-    "SymbolCodec", "SymbolU8Codec", "TokenSpacedCodec", "VariantInterner", "VariantTupleInterner",
+    "BinaryPoolLiteralStore",
+    "BinaryPoolStore",
+    "FSTLiteralStore",
+    "FrontCodedLiteralStore",
+    "FrontCodedStore",
+    "InternedLiteralStore",
+    "LiteralLexicon",
+    "LiteralStore",
+    "LoudsFSTLiteralStore",
+    "MarisaLiteralStore",
+    "PronunciationInterner",
+    "RePair",
+    "RePairCodec",
+    "StringInterner",
+    "SymbolCodec",
+    "SymbolU8Codec",
+    "TokenSpacedCodec",
+    "VariantInterner",
+    "VariantTupleInterner",
 ]

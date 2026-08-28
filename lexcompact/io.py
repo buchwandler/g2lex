@@ -23,7 +23,69 @@ def _source(path: Path, data: bytes, fmt: str, source_id: str | None = None) -> 
     )
 
 
-def parse_json_bytes(data: bytes, *, path: Path | None = None, source_id: str = "json") -> LexiconData:
+def parse_typed_bytes(
+    data: bytes,
+    *,
+    format: str,
+    path: Path | None = None,
+    source_id: str | None = None,
+    allow_tagged: bool = True,
+    allow_lists: bool = True,
+):
+    """Parse a named source format into ``TypedLexiconData``."""
+    from .adapters import (
+        parse_extended_tsv_bytes,
+        parse_json_map_bytes,
+        parse_jsonl_bytes,
+        parse_kokoro_json_bytes,
+        parse_tsv_bytes,
+        parse_word_list_bytes,
+    )
+
+    if format in {"json", "kokoro-json"}:
+        return parse_kokoro_json_bytes(
+            data, path=path, source_id=source_id, allow_lists=allow_lists
+        )
+    if format == "json-map":
+        return parse_json_map_bytes(data, path=path, source_id=source_id, allow_tagged=allow_tagged)
+    if format == "jsonl":
+        return parse_jsonl_bytes(data, path=path, source_id=source_id)
+    if format == "tsv":
+        return parse_tsv_bytes(data, path=path, source_id=source_id)
+    if format == "lxc-tsv":
+        return parse_extended_tsv_bytes(data, path=path, source_id=source_id)
+    if format == "words":
+        return parse_word_list_bytes(data, path=path, source_id=source_id)
+    raise ValueError(f"unsupported typed lexicon format: {format!r}")
+
+
+def read_typed_lexicon(
+    path: str | Path,
+    *,
+    format: str = "auto",
+    source_id: str | None = None,
+    allow_tagged: bool = True,
+    allow_lists: bool = True,
+):
+    source_path = Path(path)
+    data = source_path.read_bytes()
+    fmt = format
+    if fmt == "auto":
+        suffix = source_path.suffix.lower()
+        fmt = {".json": "kokoro-json", ".jsonl": "jsonl", ".txt": "words"}.get(suffix, "tsv")
+    return parse_typed_bytes(
+        data,
+        format=fmt,
+        path=source_path,
+        source_id=source_id or source_path.stem,
+        allow_tagged=allow_tagged,
+        allow_lists=allow_lists,
+    )
+
+
+def parse_json_bytes(
+    data: bytes, *, path: Path | None = None, source_id: str = "json"
+) -> LexiconData:
     label = str(path or source_id)
     try:
         value = json.loads(data.decode("utf-8"))
@@ -45,13 +107,18 @@ def parse_json_bytes(data: bytes, *, path: Path | None = None, source_id: str = 
             )
         entries[word] = variants
     source = (
-        _source(path, data, "json", source_id) if path is not None
-        else SourceInfo(source_id, sha256=hashlib.sha256(data).hexdigest(), format="json", size_bytes=len(data))
+        _source(path, data, "json", source_id)
+        if path is not None
+        else SourceInfo(
+            source_id, sha256=hashlib.sha256(data).hexdigest(), format="json", size_bytes=len(data)
+        )
     )
     return LexiconData(entries, source, len(entries)).runtime_unique()
 
 
-def parse_tsv_bytes(data: bytes, *, path: Path | None = None, source_id: str = "tsv") -> LexiconData:
+def parse_tsv_bytes(
+    data: bytes, *, path: Path | None = None, source_id: str = "tsv"
+) -> LexiconData:
     label = str(path or source_id)
     try:
         text = data.decode("utf-8")
@@ -71,15 +138,20 @@ def parse_tsv_bytes(data: bytes, *, path: Path | None = None, source_id: str = "
             raise LexiconFormatError(f"{label}:{line_number}: empty spelling")
         entries.setdefault(word, []).append(pronunciation)
     source = (
-        _source(path, data, "tsv", source_id) if path is not None
-        else SourceInfo(source_id, sha256=hashlib.sha256(data).hexdigest(), format="tsv", size_bytes=len(data))
+        _source(path, data, "tsv", source_id)
+        if path is not None
+        else SourceInfo(
+            source_id, sha256=hashlib.sha256(data).hexdigest(), format="tsv", size_bytes=len(data)
+        )
     )
     return LexiconData(
         {word: tuple(values) for word, values in entries.items()}, source, rows
     ).runtime_unique()
 
 
-def read_lexicon(path: str | Path, *, format: str = "auto", source_id: str | None = None) -> LexiconData:
+def read_lexicon(
+    path: str | Path, *, format: str = "auto", source_id: str | None = None
+) -> LexiconData:
     source_path = Path(path)
     data = source_path.read_bytes()
     fmt = format
@@ -107,7 +179,9 @@ def write_lexicon(path: str | Path, lexicon: LexiconData, *, format: str = "auto
         )
         return
     if fmt == "tsv":
-        lines = [f"{word}\t{value}\n" for word in lexicon.words for value in lexicon.lookup_all(word)]
+        lines = [
+            f"{word}\t{value}\n" for word in lexicon.words for value in lexicon.lookup_all(word)
+        ]
         destination.write_text("".join(lines), encoding="utf-8")
         return
     raise ValueError(f"unsupported lexicon format: {format!r}")

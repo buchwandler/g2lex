@@ -1,4 +1,5 @@
 """Aggregate benchmark case summaries into leaderboard and Pareto reports."""
+
 from __future__ import annotations
 
 import argparse
@@ -38,8 +39,18 @@ def _load(root: Path) -> list[dict[str, Any]]:
 
 
 def _dominates(left: dict[str, Any], right: dict[str, Any]) -> bool:
-    metrics = (("literal_word_count", True), ("asset_bytes", True), ("load_ms_median", True), ("rss_after_load", True), ("generated_p95_ms", True))
-    comparable = [(left.get(key), right.get(key), lower) for key, lower in metrics if left.get(key) is not None and right.get(key) is not None]
+    metrics = (
+        ("literal_word_count", True),
+        ("asset_bytes", True),
+        ("load_ms_median", True),
+        ("rss_after_load", True),
+        ("generated_p95_ms", True),
+    )
+    comparable = [
+        (left.get(key), right.get(key), lower)
+        for key, lower in metrics
+        if left.get(key) is not None and right.get(key) is not None
+    ]
     if not comparable:
         return False
     no_worse = all(a <= b if lower else a >= b for a, b, lower in comparable)
@@ -50,12 +61,56 @@ def _dominates(left: dict[str, Any], right: dict[str, Any]) -> bool:
 def aggregate(root: str | Path) -> dict[str, Any]:
     destination = Path(root)
     rows = _load(destination)
-    rows.sort(key=lambda item: (not bool(item.get("lossless", False)), item.get("literal_word_count", 10**18), item.get("asset_bytes", 10**18)))
+    rows.sort(
+        key=lambda item: (
+            not bool(item.get("lossless", False)),
+            item.get("literal_word_count", 10**18),
+            item.get("asset_bytes", 10**18),
+        )
+    )
     comparable_rows = [row for row in rows if row.get("lossless")] or rows
-    pareto = [row for row in comparable_rows if not any(_dominates(other, row) for other in comparable_rows if other is not row)]
-    fields = ("case", "source_id", "source_physical_rows", "source_logical_word_count", "source_ordered_variant_count", "lossless", "baseline_word_count", "literal_word_count", "generated_word_count", "entry_reduction_rate", "asset_bytes", "membership_serialized_bytes", "load_ms_median", "rss_after_load", "pss_after_load", "baseline_rss_delta_bytes", "candidate_rss_delta_bytes", "rss_saved_bytes", "rss_saved_rate", "baseline_pss_delta_bytes", "candidate_pss_delta_bytes", "pss_saved_bytes", "pss_saved_rate", "literal_qps", "generated_qps", "miss_qps", "generated_p50_ms", "generated_p95_ms", "generated_p99_ms", "build_seconds", "runtime_model_bytes")
+    pareto = [
+        row
+        for row in comparable_rows
+        if not any(_dominates(other, row) for other in comparable_rows if other is not row)
+    ]
+    fields = (
+        "case",
+        "source_id",
+        "source_physical_rows",
+        "source_logical_word_count",
+        "source_ordered_variant_count",
+        "lossless",
+        "baseline_word_count",
+        "literal_word_count",
+        "generated_word_count",
+        "entry_reduction_rate",
+        "asset_bytes",
+        "membership_serialized_bytes",
+        "load_ms_median",
+        "rss_after_load",
+        "pss_after_load",
+        "baseline_rss_delta_bytes",
+        "candidate_rss_delta_bytes",
+        "rss_saved_bytes",
+        "rss_saved_rate",
+        "baseline_pss_delta_bytes",
+        "candidate_pss_delta_bytes",
+        "pss_saved_bytes",
+        "pss_saved_rate",
+        "literal_qps",
+        "generated_qps",
+        "miss_qps",
+        "generated_p50_ms",
+        "generated_p95_ms",
+        "generated_p99_ms",
+        "build_seconds",
+        "runtime_model_bytes",
+    )
     leaderboard = [{field: row.get(field) for field in fields} for row in rows]
-    (destination / "leaderboard.json").write_text(json.dumps(leaderboard, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (destination / "leaderboard.json").write_text(
+        json.dumps(leaderboard, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     with (destination / "leaderboard.tsv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t")
         writer.writeheader()
@@ -63,8 +118,20 @@ def aggregate(root: str | Path) -> dict[str, Any]:
     lines = ["# Lexcompact benchmark leaderboard", "", "\t".join(fields)]
     lines.extend("\t".join(str(row.get(field, "")) for field in fields) for row in leaderboard)
     (destination / "leaderboard.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    (destination / "pareto.json").write_text(json.dumps([{field: row.get(field) for field in fields} for row in pareto], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return {"cases": len(rows), "leaderboard": leaderboard, "pareto": [{field: row.get(field) for field in fields} for row in pareto]}
+    (destination / "pareto.json").write_text(
+        json.dumps(
+            [{field: row.get(field) for field in fields} for row in pareto],
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return {
+        "cases": len(rows),
+        "leaderboard": leaderboard,
+        "pareto": [{field: row.get(field) for field in fields} for row in pareto],
+    }
 
 
 def main(argv: list[str] | None = None) -> int:

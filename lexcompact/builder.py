@@ -6,13 +6,14 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-from .model import CandidateMetrics, ImplicitLexicon, LexiconData, LiteralLexicon
+from .backends import build_codec, build_literal_store, build_membership_backend
 from .composer import ImplicitComposer, SearchLimitError
-from .backends import build_literal_store, build_membership_backend, build_codec
-from .prefix_index import MutableLiteralPrefixIndex
-from .rules import RuleSet
 from .linkers import LinkerTable
+from .model import CandidateMetrics, ImplicitLexicon, LexiconData
+from .prefix_index import MutableLiteralPrefixIndex
 from .resolver import ComponentResolver, ResolveContext
+from .rules import RuleSet
+
 
 @dataclass(slots=True)
 class BuildResult:
@@ -80,13 +81,16 @@ def build_implicit_lexicon(
             max_depth=max_recursive_depth,
             max_states=max_states,
         )
-        if recursive_components else None
+        if recursive_components
+        else None
     )
     ordered_words = sorted(source.words, key=lambda word: (len(word), word))
     stage_coverage: dict[str, dict[str, int]] = {}
+
     def count(stage: str, field_name: str) -> None:
         values = stage_coverage.setdefault(stage, {})
         values[field_name] = values.get(field_name, 0) + 1
+
     for word in ordered_words:
         expected = source.lookup_all(word)
         result = None
@@ -147,12 +151,16 @@ def build_implicit_lexicon(
         token
         for values in source.entries.values()
         for pronunciation in values
-        for token in (pronunciation.split(" ") if pronunciation_codec == "token-spaced" else pronunciation)
+        for token in (
+            pronunciation.split(" ") if pronunciation_codec == "token-spaced" else pronunciation
+        )
     )
     codec = build_codec(pronunciation_codec, codec_values, **codec_options)
     codec_metadata: dict[str, object] = {"id": pronunciation_codec}
     if codec is not None and pronunciation_codec == "repair":
-        payload = "\n".join(value for values in source.entries.values() for value in values).encode("utf-8")
+        payload = "\n".join(value for values in source.entries.values() for value in values).encode(
+            "utf-8"
+        )
         codec_metadata.update(codec.accounting(payload))
     metadata: dict[str, object] = {
         "schema": 1,
@@ -184,5 +192,12 @@ def build_implicit_lexicon(
         failures,
         enumeration_matches,
         search_limit_words,
-        {"stages": stage_coverage, "candidate_count": sum(item.get("candidate_proposed", 0) for item in stage_coverage.values()), "generated_count": generated_count, "search_limit_words": search_limit_words},
+        {
+            "stages": stage_coverage,
+            "candidate_count": sum(
+                item.get("candidate_proposed", 0) for item in stage_coverage.values()
+            ),
+            "generated_count": generated_count,
+            "search_limit_words": search_limit_words,
+        },
     )

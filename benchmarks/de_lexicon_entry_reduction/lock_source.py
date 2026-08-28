@@ -1,4 +1,5 @@
 """Create and validate immutable source records for benchmark inputs."""
+
 from __future__ import annotations
 
 import argparse
@@ -70,7 +71,8 @@ def validate_lock(
         "sha256": actual["sha256"] == lock.get("sha256"),
         "size_bytes": actual["size_bytes"] == lock.get("size_bytes"),
         "logical_word_count": actual["logical_word_count"] == lock.get("logical_word_count"),
-        "ordered_variant_count": actual["ordered_variant_count"] == lock.get("ordered_variant_count"),
+        "ordered_variant_count": actual["ordered_variant_count"]
+        == lock.get("ordered_variant_count"),
         "parser_version": actual["parser_version"] == lock.get("parser_version"),
         "view_version": actual["view_version"] == lock.get("view_version"),
         "repository_commit": lock.get("repository_commit") == repository_commit,
@@ -84,7 +86,7 @@ def validate_lock(
 def load_lock(path: str | Path) -> dict[str, Any]:
     value = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(value, dict):
-        raise ValueError("source lock must be a JSON object")
+        raise TypeError("source lock must be a JSON object")
     return value
 
 

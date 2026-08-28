@@ -25,8 +25,7 @@ _FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 
 def _json_bytes(value: object) -> bytes:
     return (
-        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        + "\n"
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode("utf-8")
 
 
@@ -60,9 +59,7 @@ def manifest_dict(asset: ImplicitLexicon) -> dict[str, Any]:
 def asset_members(asset: ImplicitLexicon) -> dict[str, bytes]:
     return {
         "manifest.json": _json_bytes(manifest_dict(asset)),
-        "literals.json": _json_bytes(
-            {word: list(asset.literals[word]) for word in asset.literals}
-        ),
+        "literals.json": _json_bytes({word: list(asset.literals[word]) for word in asset.literals}),
         "literal-index.json": _json_bytes(asset.literal_index.as_dict()),
         "membership.dafsa": asset.membership.serialize(),
         "rules.json": _json_bytes(asset.composer.rules.as_dict()),
@@ -71,9 +68,7 @@ def asset_members(asset: ImplicitLexicon) -> dict[str, bytes]:
                 "max_components": asset.composer.max_components,
                 "max_states": asset.composer.max_states,
                 "two_part_fast_path": asset.composer.two_part_fast_path,
-                "linkers": asset.composer.linkers.as_dict()
-                if asset.composer.linkers
-                else None,
+                "linkers": asset.composer.linkers.as_dict() if asset.composer.linkers else None,
                 "recursive_components": asset.composer.recursive_components,
                 "max_recursive_depth": asset.composer.max_recursive_depth,
                 "segmentation_scorer": (
@@ -103,6 +98,10 @@ def save(path: str | Path, asset: ImplicitLexicon) -> None:
 
 
 def loads(data: bytes) -> ImplicitLexicon:
+    if data[:4] == b"LXC5":
+        from .lexicon import open_bytes
+
+        return open_bytes(data)  # type: ignore[return-value]
     if data[:4] == b"LXC4":
         from .asset_v4 import loads as loads_v4
 
@@ -163,16 +162,25 @@ def load(path: str | Path) -> ImplicitLexicon:
     path = Path(path)
     with path.open("rb") as handle:
         magic = handle.read(4)
-    if magic == b"LXC4":
-        from .asset_v4 import load as load_v4
+        if magic == b"LXC5":
+            from .lexicon import open_lexicon
 
-        return load_v4(path)
+            return open_lexicon(path)  # type: ignore[return-value]
+        if magic == b"LXC4":
+            from .asset_v4 import load as load_v4
+
+            return load_v4(path)
     return loads(path.read_bytes())
 
 
 def load_traversable(resource: Any) -> ImplicitLexicon:
     """Load from an importlib.resources Traversable or any object with read_bytes()."""
-    return loads(resource.read_bytes())
+    data = resource.read_bytes()
+    if data[:4] == b"LXC5":
+        from .lexicon import open_traversable
+
+        return open_traversable(resource)  # type: ignore[return-value]
+    return loads(data)
 
 
 def runtime_asset_bytes(path: str | Path) -> int:

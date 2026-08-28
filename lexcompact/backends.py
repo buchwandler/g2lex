@@ -1,4 +1,5 @@
 """Central factories for benchmark-selectable runtime backends."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -11,7 +12,12 @@ from .literals import (
     SymbolCodec,
     TokenSpacedCodec,
 )
-from .membership import BloomMembership, DafsaBinaryMembership, MembershipIndex, SortedUTF8Membership
+from .membership import (
+    BloomMembership,
+    DafsaBinaryMembership,
+    MembershipIndex,
+    SortedUTF8Membership,
+)
 
 MEMBERSHIP_BACKENDS = (
     "dafsa-json-v1",

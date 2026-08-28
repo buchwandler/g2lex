@@ -1,4 +1,5 @@
 """Ephemeral literal-or-recursive constituent resolution for V2."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -25,6 +26,7 @@ class ComponentResolver:
     prefix_index: Any
     max_depth: int = 4
     max_states: int = 100_000
+
     def __post_init__(self) -> None:
         # Prefix traversal is delegated to the exact membership backend.
         pass

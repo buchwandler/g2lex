@@ -1,21 +1,24 @@
 from pathlib import Path
 
-import pytest
-
 from lexcompact import LexiconData, reduce_lexicon
 from lexcompact.asset import load
-from lexcompact.asset_v4 import dumps as dumps_v4, loads as loads_v4
+from lexcompact.asset_v4 import dumps as dumps_v4
+from lexcompact.asset_v4 import loads as loads_v4
 from lexcompact.audit import audit_runtime_representation
-from lexcompact.container import dumps as dump_container, loads as load_container
+from lexcompact.container import dumps as dump_container
+from lexcompact.container import loads as load_container
 from lexcompact.literals import BinaryPoolLiteralStore, RePairCodec, SymbolCodec
-from lexcompact.membership import DafsaBinaryMembership, MembershipIndex, SortedUTF8Membership
+from lexcompact.membership import DafsaBinaryMembership, SortedUTF8Membership
 from lexcompact.runtime import ReconstructionCandidate
 from lexcompact.selectors import StaticPrioritySelector
 
 
 def test_membership_backends_are_exact_and_roundtrip():
     words = ("Haus", "Haustür", "Tür", "你好")
-    for backend in (DafsaBinaryMembership.from_words(words), SortedUTF8Membership.from_words(words)):
+    for backend in (
+        DafsaBinaryMembership.from_words(words),
+        SortedUTF8Membership.from_words(words),
+    ):
         restored = type(backend).deserialize(backend.serialize())
         assert tuple(restored.iter_words()) == tuple(sorted(words))
         assert all(restored.contains(word) for word in words)
@@ -48,5 +51,8 @@ def test_codecs_and_selector_are_deterministic():
     assert repair.decode(repair.encode(b"abcabcabc")) == b"abcabcabc"
     symbols = SymbolCodec("abˈ")
     assert symbols.decode(symbols.encode("aˈb")) == "aˈb"
-    candidates = (ReconstructionCandidate("graphone", ("g",)), ReconstructionCandidate("compound", ("c",)))
+    candidates = (
+        ReconstructionCandidate("graphone", ("g",)),
+        ReconstructionCandidate("compound", ("c",)),
+    )
     assert StaticPrioritySelector().choose({}, candidates).stage_id == "compound"

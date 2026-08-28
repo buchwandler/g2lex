@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import struct
 from bisect import bisect_left
-from dataclasses import dataclass
-from typing import Any
-
-
 from collections.abc import Iterator, Mapping
-from typing import Protocol
+from dataclasses import dataclass
+from itertools import pairwise
+from typing import Any, Protocol
 
 
 class ExactMembership(Protocol):
@@ -30,6 +28,7 @@ class ExactMembership(Protocol):
     def serialized_bytes(self) -> int: ...
 
     def serialize_sections(self) -> Mapping[str, bytes]: ...
+
 
 @dataclass(slots=True)
 class _BuildNode:
@@ -50,6 +49,7 @@ class MembershipIndex:
     root: int = 0
     word_count_hint: int | None = None
     backend_id = "dafsa-json-v1"
+
     @classmethod
     def from_words(cls, words: list[str] | tuple[str, ...]) -> MembershipIndex:
         root = _BuildNode()
@@ -65,8 +65,7 @@ class MembershipIndex:
 
         def intern(node: _BuildNode) -> int:
             children = tuple(
-                (character, intern(child))
-                for character, child in sorted(node.edges.items())
+                (character, intern(child)) for character, child in sorted(node.edges.items())
             )
             signature = (node.terminal, children)
             existing = interned.get(signature)
@@ -113,6 +112,7 @@ class MembershipIndex:
 
     def iter_words(self) -> Iterator[str]:
         """Return deterministic words for compatibility and offline export."""
+
         def visit(state: int, prefix: str) -> Iterator[str]:
             if self.terminal_states[state]:
                 yield prefix
@@ -128,7 +128,11 @@ class MembershipIndex:
         for index in range(position, len(text)):
             character = text[index]
             target = next(
-                (target for edge_character, target in self.edges[state] if edge_character == character),
+                (
+                    target
+                    for edge_character, target in self.edges[state]
+                    if edge_character == character
+                ),
                 None,
             )
             if target is None:
@@ -140,7 +144,12 @@ class MembershipIndex:
 
     @property
     def word_count(self) -> int:
-        return self.word_count_hint if self.word_count_hint is not None else sum(1 for _ in self.iter_words())
+        return (
+            self.word_count_hint
+            if self.word_count_hint is not None
+            else sum(1 for _ in self.iter_words())
+        )
+
     def as_dict(self) -> dict[str, Any]:
         return {
             "version": 1,
@@ -156,9 +165,7 @@ class MembershipIndex:
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> MembershipIndex:
         if int(value.get("version", 1)) != 1:
-            raise ValueError(
-                f"unsupported membership version: {value.get('version')!r}"
-            )
+            raise ValueError(f"unsupported membership version: {value.get('version')!r}")
         edges = tuple(
             tuple((str(character), int(target)) for character, target in state_edges)
             for state_edges in value["edges"]
@@ -174,9 +181,7 @@ class MembershipIndex:
         )
 
     def serialize(self) -> bytes:
-        return (
-            json.dumps(self.as_dict(), sort_keys=True, separators=(",", ":")) + "\n"
-        ).encode()
+        return (json.dumps(self.as_dict(), sort_keys=True, separators=(",", ":")) + "\n").encode()
 
     @classmethod
     def deserialize(cls, data: bytes) -> MembershipIndex:
@@ -192,6 +197,7 @@ class MembershipIndex:
 
 class _WordSequenceMembership:
     """Shared exact operations for sorted static word backends."""
+
     backend_id = "sorted-utf8"
 
     def __init__(self, words: list[str] | tuple[str, ...]) -> None:
@@ -245,7 +251,7 @@ class _WordSequenceMembership:
         return self._serialized
 
     @classmethod
-    def deserialize(cls, data: bytes) -> "_WordSequenceMembership":
+    def deserialize(cls, data: bytes) -> _WordSequenceMembership:
         if len(data) < 12 or data[:4] != b"SUTF":
             raise ValueError("invalid sorted-utf8 membership header")
         _, version, count = struct.unpack_from("<4sII", data)
@@ -256,7 +262,7 @@ class _WordSequenceMembership:
             raise ValueError("truncated sorted-utf8 offsets")
         offsets = struct.unpack_from(f"<{count + 1}I", data, 12)
         blob = data[table_end:]
-        if offsets[-1] != len(blob) or any(a > b for a, b in zip(offsets, offsets[1:])):
+        if offsets[-1] != len(blob) or any(a > b for a, b in pairwise(offsets)):
             raise ValueError("invalid sorted-utf8 offsets")
         try:
             words = [blob[offsets[i] : offsets[i + 1]].decode("utf-8") for i in range(count)]
@@ -269,11 +275,13 @@ class _WordSequenceMembership:
 
 class SortedUTF8Membership(_WordSequenceMembership):
     """Exact sorted UTF-8 word table control backend."""
+
     backend_id = "sorted-utf8"
 
 
 class DafsaBinaryMembership(MembershipIndex):
     """Packed binary representation of the exact DAFSA control."""
+
     backend_id = "dafsa-binary-v2"
 
     def serialize(self) -> bytes:
@@ -288,7 +296,9 @@ class DafsaBinaryMembership(MembershipIndex):
                 encoded = label.encode("utf-8")
                 offset = len(labels)
                 labels.extend(encoded)
-                edge_rows.append((offset, len(encoded), target, ord(label) if len(label) == 1 else 0))
+                edge_rows.append(
+                    (offset, len(encoded), target, ord(label) if len(label) == 1 else 0)
+                )
             state_rows.append((start, len(edges)))
         header = struct.pack("<4sIIII", b"DFA2", 2, self.root, state_count, edge_count)
         terminals = bytes(int(value) for value in self.terminal_states)
@@ -297,7 +307,7 @@ class DafsaBinaryMembership(MembershipIndex):
         return header + terminals + states + edges + bytes(labels)
 
     @classmethod
-    def deserialize(cls, data: bytes) -> "DafsaBinaryMembership":
+    def deserialize(cls, data: bytes) -> DafsaBinaryMembership:
         if len(data) < 20 or data[:4] != b"DFA2":
             raise ValueError("invalid binary DAFSA header")
         _, version, root, state_count, edge_count = struct.unpack_from("<4sIIII", data)
@@ -310,8 +320,12 @@ class DafsaBinaryMembership(MembershipIndex):
         if edges_end > len(data):
             raise ValueError("truncated binary DAFSA arrays")
         terminals = tuple(bool(value) for value in data[cursor:terminals_end])
-        state_rows = [struct.unpack_from("<II", data, terminals_end + i * 8) for i in range(state_count)]
-        edge_rows = [struct.unpack_from("<IIII", data, states_end + i * 16) for i in range(edge_count)]
+        state_rows = [
+            struct.unpack_from("<II", data, terminals_end + i * 8) for i in range(state_count)
+        ]
+        edge_rows = [
+            struct.unpack_from("<IIII", data, states_end + i * 16) for i in range(edge_count)
+        ]
         pool = data[edges_end:]
         result_edges: list[tuple[tuple[str, int], ...]] = []
         for start, count in state_rows:
@@ -340,6 +354,7 @@ class DafsaBinaryMembership(MembershipIndex):
 
 class MarisaMembership(SortedUTF8Membership):
     """Optional MARISA backend with an explicit dependency failure."""
+
     backend_id = "marisa"
 
     def __init__(self, words: list[str] | tuple[str, ...]) -> None:
@@ -353,9 +368,13 @@ class MarisaMembership(SortedUTF8Membership):
 
 class BloomMembership:
     """Packed Bloom negative prefilter over an exact backend."""
+
     backend_id = "bloom+dafsa-binary-v2"
     exact_backend_id = "dafsa-binary-v2"
-    def __init__(self, backend: ExactMembership, bits_per_key: int = 10, hash_count: int = 3, seed: int = 0) -> None:
+
+    def __init__(
+        self, backend: ExactMembership, bits_per_key: int = 10, hash_count: int = 3, seed: int = 0
+    ) -> None:
         if bits_per_key <= 0 or hash_count <= 0:
             raise ValueError("Bloom parameters must be positive")
         self.backend = backend
@@ -367,31 +386,49 @@ class BloomMembership:
         for word in backend.iter_words():
             for index in self._positions(word):
                 self._bits[index // 8] |= 1 << (index % 8)
+
     def _positions(self, word: str):
         raw = word.encode("utf-8")
         for index in range(self.hash_count):
-            digest = hashlib.blake2b(raw, digest_size=8, person=b"lxc-bloom", key=struct.pack("<Q", self.seed + index)).digest()
+            digest = hashlib.blake2b(
+                raw, digest_size=8, person=b"lxc-bloom", key=struct.pack("<Q", self.seed + index)
+            ).digest()
             yield int.from_bytes(digest, "little") % self._bit_count
+
     def contains(self, word: str) -> bool:
-        if any(not (self._bits[index // 8] & (1 << (index % 8))) for index in self._positions(word)):
+        if any(
+            not (self._bits[index // 8] & (1 << (index % 8))) for index in self._positions(word)
+        ):
             return False
         return self.backend.contains(word)
+
     def iter_words(self):
         return self.backend.iter_words()
+
     def prefixes(self, text: str, position: int = 0):
         return self.backend.prefixes(text, position)
+
     @property
     def word_count(self):
         return self.backend.word_count
+
     @property
     def serialized_bytes(self):
         return len(self.serialize()) + self.backend.serialized_bytes
+
     def serialize(self) -> bytes:
-        return struct.pack("<4sIIII", b"BLM1", self.bits_per_key, self.hash_count, self.seed, self._bit_count) + bytes(self._bits)
+        return struct.pack(
+            "<4sIIII", b"BLM1", self.bits_per_key, self.hash_count, self.seed, self._bit_count
+        ) + bytes(self._bits)
+
     def serialize_sections(self):
-        return {"membership.bloom": self.serialize(), "membership.bloom-exact": self.backend.serialize()}
+        return {
+            "membership.bloom": self.serialize(),
+            "membership.bloom-exact": self.backend.serialize(),
+        }
+
     @classmethod
-    def deserialize(cls, data: bytes | memoryview, backend: ExactMembership) -> "BloomMembership":
+    def deserialize(cls, data: bytes | memoryview, backend: ExactMembership) -> BloomMembership:
         view = memoryview(data)
         if len(view) < 20 or bytes(view[:4]) != b"BLM1":
             raise ValueError("invalid Bloom membership header")
@@ -411,6 +448,7 @@ class BloomMembership:
 
 class XorFilterMembership(BloomMembership):
     """Deterministic filter wrapper with the exact backend as authority."""
+
     backend_id = "xor"
 
     def serialize_sections(self):
@@ -419,12 +457,16 @@ class XorFilterMembership(BloomMembership):
 
 class MPHMembership(_WordSequenceMembership):
     """Exact hash experiment with a stored-key verification table."""
+
     backend_id = "mph"
 
     def contains(self, word: str) -> bool:
         if not self._words:
             return False
-        slot = int.from_bytes(hashlib.blake2b(word.encode("utf-8"), digest_size=8, person=b"lxc-mph").digest(), "little") % len(self._words)
+        slot = int.from_bytes(
+            hashlib.blake2b(word.encode("utf-8"), digest_size=8, person=b"lxc-mph").digest(),
+            "little",
+        ) % len(self._words)
         candidate = self._words[slot]
         return candidate == word or super().contains(word)
 
@@ -436,7 +478,6 @@ BinaryDAFSAMembership = DafsaBinaryMembership
 BinaryDafsaMembership = DafsaBinaryMembership
 SortedUtf8Membership = SortedUTF8Membership
 BloomFilterMembership = BloomMembership
-XorFilterMembership = XorFilterMembership
 ExactMPHMembership = MPHMembership
 MPHExactMembership = MPHMembership
 

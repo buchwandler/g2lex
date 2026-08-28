@@ -1,4 +1,5 @@
 """Slow release gate for the complete, source-locked German lexicon."""
+
 from __future__ import annotations
 
 import argparse
@@ -52,7 +53,9 @@ def run_gate(config_path: str | Path) -> list[dict[str, object]]:
         raise RuntimeError(f"full-source gate cannot validate the exact source ({exc})") from exc
     expected = int(values.get("expected_baseline_word_count", 738427))
     if len(loaded.entries) != expected:
-        raise RuntimeError(f"full-source gate baseline count mismatch: expected {expected}, got {len(loaded.entries)}")
+        raise RuntimeError(
+            f"full-source gate baseline count mismatch: expected {expected}, got {len(loaded.entries)}"
+        )
     if lock.get("repository_commit") != EXPECTED_REPOSITORY_COMMIT:
         raise RuntimeError("full-source gate requires the pinned KokoroG2P repository commit")
     return run_config(config_file)

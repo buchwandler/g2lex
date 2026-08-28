@@ -52,7 +52,9 @@ def test_crane_default_cache_discovery(tmp_path: Path, monkeypatch: pytest.Monke
     assert resolve_source_path(spec) == expected
 
 
-def test_missing_crane_source_explains_explicit_download(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_crane_source_explains_explicit_download(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from benchmarks.de_lexicon_entry_reduction import sources
 
     monkeypatch.setattr(sources, "DEFAULT_CACHE_DIR", tmp_path)
@@ -63,11 +65,7 @@ def test_missing_crane_source_explains_explicit_download(tmp_path: Path, monkeyp
 def test_tsv_runtime_view_preserves_shape_and_variant_order(tmp_path: Path) -> None:
     path = tmp_path / "variants.tsv"
     path.write_text(
-        "Haus\thˈaʊs\n"
-        "Haus\thaʊs\n"
-        "Haus\thaʊs\n"
-        "Tür\ttˈyːɐ\n"
-        "Haustür\thˈaʊstˌyːɐ\n",
+        "Haus\thˈaʊs\nHaus\thaʊs\nHaus\thaʊs\nTür\ttˈyːɐ\nHaustür\thˈaʊstˌyːɐ\n",
         encoding="utf-8",
     )
     source = load_source("crane_wiktionary", path=path)

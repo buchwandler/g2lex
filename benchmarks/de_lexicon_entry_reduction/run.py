@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build, reload, verify, and report one configured lexicon candidate."""
+
 from __future__ import annotations
 
 import argparse
@@ -32,7 +33,11 @@ def _stage_ids(methods: dict[str, Any] | None) -> tuple[str, ...]:
     for name in ("morphology", "rewrite", "cart", "graphone", "neural"):
         config = values.get(name, {})
         if isinstance(config, dict) and bool(config.get("enabled", False)):
-            stages.append(name if name != "neural" else str(config.get("implementation", "character-majority-control")))
+            stages.append(
+                name
+                if name != "neural"
+                else str(config.get("implementation", "character-majority-control"))
+            )
     return tuple(stages)
 
 
@@ -42,7 +47,14 @@ def _selector(methods: dict[str, Any] | None, stages: tuple[str, ...]):
         kind = str(config.get("kind", "static-priority"))
     else:
         kind = str(config or "static-priority")
-    if kind not in {"static-priority", "priority", "rule-tree", "hashed-logistic", "forest", "gbdt"}:
+    if kind not in {
+        "static-priority",
+        "priority",
+        "rule-tree",
+        "hashed-logistic",
+        "forest",
+        "gbdt",
+    }:
         raise ValueError(f"unknown selector method: {kind}")
     return StaticPrioritySelector(stages)
 
@@ -56,8 +68,12 @@ def _source_statistics(source: Any) -> dict[str, object]:
         "source_logical_word_count": logical_words,
         "source_ordered_variant_count": ordered_variants,
         "source_duplicate_variant_rows_removed": physical_rows - ordered_variants,
-        "source_multi_variant_word_count": sum(len(values) > 1 for values in source.entries.values()),
-        "source_max_variants_per_word": max((len(values) for values in source.entries.values()), default=0),
+        "source_multi_variant_word_count": sum(
+            len(values) > 1 for values in source.entries.values()
+        ),
+        "source_max_variants_per_word": max(
+            (len(values) for values in source.entries.values()), default=0
+        ),
         "source_id": source.source.source_id,
         "source_revision": source.source.revision,
         "source_sha256": source.source.sha256,
@@ -110,22 +126,63 @@ def run(
     rules = german_rules(boundary_rules=use_boundary) if compound else default_rules(False)
     if selector == "v2":
         selector_started = time.perf_counter()
-        build_implicit_lexicon(source, rules=rules, max_components=max_components, max_states=max_states, linkers=linker_table, recursive_components=recursive_components, max_recursive_depth=max_recursive_depth, segmentation_scorer=scorer)
+        build_implicit_lexicon(
+            source,
+            rules=rules,
+            max_components=max_components,
+            max_states=max_states,
+            linkers=linker_table,
+            recursive_components=recursive_components,
+            max_recursive_depth=max_recursive_depth,
+            segmentation_scorer=scorer,
+        )
         phases["selector_training_seconds"] = time.perf_counter() - selector_started
-        rules = german_rules(boundary_rules=use_boundary, selector=None) if compound else default_rules(False, selector=None)
+        rules = (
+            german_rules(boundary_rules=use_boundary, selector=None)
+            if compound
+            else default_rules(False, selector=None)
+        )
     elif selector != "v1":
         raise ValueError(f"unknown selector: {selector}")
     build_started = time.perf_counter()
     if optimizer == "utility":
-        build = optimize_basis(source, rules=rules, linkers=linker_table, recursive_components=recursive_components, max_recursive_depth=max_recursive_depth, max_components=max_components, max_states=max_states, segmentation_scorer=scorer, max_passes=max_passes, target_literals=target_literals).build
+        build = optimize_basis(
+            source,
+            rules=rules,
+            linkers=linker_table,
+            recursive_components=recursive_components,
+            max_recursive_depth=max_recursive_depth,
+            max_components=max_components,
+            max_states=max_states,
+            segmentation_scorer=scorer,
+            max_passes=max_passes,
+            target_literals=target_literals,
+        ).build
     elif optimizer == "greedy":
-        build = build_implicit_lexicon(source, rules=rules, max_components=max_components, max_states=max_states, linkers=linker_table, recursive_components=recursive_components, max_recursive_depth=max_recursive_depth, segmentation_scorer=scorer, membership_backend=membership_backend, literal_backend=literal_backend, pronunciation_codec=pronunciation_codec, seed=seed)
+        build = build_implicit_lexicon(
+            source,
+            rules=rules,
+            max_components=max_components,
+            max_states=max_states,
+            linkers=linker_table,
+            recursive_components=recursive_components,
+            max_recursive_depth=max_recursive_depth,
+            segmentation_scorer=scorer,
+            membership_backend=membership_backend,
+            literal_backend=literal_backend,
+            pronunciation_codec=pronunciation_codec,
+            seed=seed,
+        )
     else:
         raise ValueError(f"unknown optimizer: {optimizer}")
     if getattr(build.asset.membership, "backend_id", "") != membership_backend:
-        build.asset.membership = build_membership_backend(membership_backend, source.words, seed=seed)
+        build.asset.membership = build_membership_backend(
+            membership_backend, source.words, seed=seed
+        )
     if getattr(build.asset.literals, "backend_id", "") != literal_backend:
-        build.asset.literals = build_literal_store(literal_backend, {word: build.asset.literals[word] for word in build.asset.literals})
+        build.asset.literals = build_literal_store(
+            literal_backend, {word: build.asset.literals[word] for word in build.asset.literals}
+        )
     build.asset.metadata["membership_backend"] = membership_backend
     build.asset.metadata["literal_backend"] = literal_backend
     build.asset.metadata["pronunciation_codec"] = {"id": pronunciation_codec}
@@ -141,7 +198,11 @@ def run(
         raise ValueError(f"unknown asset format: {asset_format}")
     if asset_format == "v4":
         stages = _stage_ids(methods)
-        build.asset.runtime_program = RuntimeProgram.from_v4(build.asset.composer, _selector(methods, stages), stages=tuple(ComposerReconstructor(build.asset.composer, stage) for stage in stages))
+        build.asset.runtime_program = RuntimeProgram.from_v4(
+            build.asset.composer,
+            _selector(methods, stages),
+            stages=tuple(ComposerReconstructor(build.asset.composer, stage) for stage in stages),
+        )
         build.asset.metadata["runtime_stages"] = list(stages)
     serialize_started = time.perf_counter()
     (save_v4 if asset_format == "v4" else save)(asset_path, build.asset)
@@ -152,14 +213,51 @@ def run(
     verification_started = time.perf_counter()
     verification = verify_candidate(reloaded, source)
     phases["verification_seconds"] = time.perf_counter() - verification_started
-    summary = summary_dict(build, verification=verification, asset_bytes=runtime_asset_bytes(asset_path))
-    summary.update({"source_id": source_id, "mode": mode, "asset_format": asset_format, "optimizer": optimizer, "selector": selector, "boundary_rules": boundary_rules, "linkers": linkers, "recursive_components": recursive_components, "max_recursive_depth": max_recursive_depth, "segmentation_scorer": segmentation_scorer, "phases": phases, "loaded_membership_backend": getattr(reloaded.membership, "backend_id", "unknown"), "loaded_literal_backend": getattr(reloaded.literals, "backend_id", "unknown"), "runtime_stages": [getattr(item, "stage_id", "unknown") for item in getattr(reloaded.runtime_program, "reconstructors", ())], **source_statistics})
+    summary = summary_dict(
+        build, verification=verification, asset_bytes=runtime_asset_bytes(asset_path)
+    )
+    summary.update(
+        {
+            "source_id": source_id,
+            "mode": mode,
+            "asset_format": asset_format,
+            "optimizer": optimizer,
+            "selector": selector,
+            "boundary_rules": boundary_rules,
+            "linkers": linkers,
+            "recursive_components": recursive_components,
+            "max_recursive_depth": max_recursive_depth,
+            "segmentation_scorer": segmentation_scorer,
+            "phases": phases,
+            "loaded_membership_backend": getattr(reloaded.membership, "backend_id", "unknown"),
+            "loaded_literal_backend": getattr(reloaded.literals, "backend_id", "unknown"),
+            "runtime_stages": [
+                getattr(item, "stage_id", "unknown")
+                for item in getattr(reloaded.runtime_program, "reconstructors", ())
+            ],
+            **source_statistics,
+        }
+    )
     audit = audit_runtime_representation(reloaded)
     summary["audit"] = audit
-    (output / "verification.json").write_text(json.dumps(verification, indent=2) + "\n", encoding="utf-8")
-    (output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    (output / "build.json").write_text(json.dumps({"phases": phases, "telemetry": build.telemetry}, indent=2) + "\n", encoding="utf-8")
-    (output / "training.json").write_text(json.dumps({"seed": seed, "methods": methods or {}, "runtime_stages": summary["runtime_stages"]}, indent=2) + "\n", encoding="utf-8")
+    (output / "verification.json").write_text(
+        json.dumps(verification, indent=2) + "\n", encoding="utf-8"
+    )
+    (output / "summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    (output / "build.json").write_text(
+        json.dumps({"phases": phases, "telemetry": build.telemetry}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    (output / "training.json").write_text(
+        json.dumps(
+            {"seed": seed, "methods": methods or {}, "runtime_stages": summary["runtime_stages"]},
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (output / "report.md").write_text(report_markdown(summary), encoding="utf-8")
     _write_failures(output / "literal_failures.tsv", build.failures)
     print(json.dumps(summary, indent=2))
@@ -167,7 +265,14 @@ def run(
 
 
 def _write_failures(path: Path, failures: list[dict[str, object]]) -> None:
-    fields = ("word", "reason", "candidate", "candidate_components", "candidate_rule", "candidate_depth")
+    fields = (
+        "word",
+        "reason",
+        "candidate",
+        "candidate_components",
+        "candidate_rule",
+        "candidate_depth",
+    )
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t")
         writer.writeheader()
@@ -194,7 +299,24 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--asset-format", choices=("v3", "v4"), default="v3")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    run(args.source, args.mode, args.output, data_root=args.data_root, path=args.path, target_literals=args.target_literals, max_components=args.max_components, max_states=args.max_states, optimizer=args.optimizer, selector=args.selector, boundary_rules=args.boundary_rules, linkers=args.linkers, recursive_components=args.recursive_components, max_recursive_depth=args.max_recursive_depth, segmentation_scorer=args.segmentation_scorer, asset_format=args.asset_format)
+    run(
+        args.source,
+        args.mode,
+        args.output,
+        data_root=args.data_root,
+        path=args.path,
+        target_literals=args.target_literals,
+        max_components=args.max_components,
+        max_states=args.max_states,
+        optimizer=args.optimizer,
+        selector=args.selector,
+        boundary_rules=args.boundary_rules,
+        linkers=args.linkers,
+        recursive_components=args.recursive_components,
+        max_recursive_depth=args.max_recursive_depth,
+        segmentation_scorer=args.segmentation_scorer,
+        asset_format=args.asset_format,
+    )
     return 0
 
 

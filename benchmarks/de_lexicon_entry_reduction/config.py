@@ -1,4 +1,5 @@
 """Strict TOML configuration resolution for reproducible experiments."""
+
 from __future__ import annotations
 
 import copy
@@ -21,10 +22,25 @@ DEFAULTS: dict[str, Any] = {
     "source": {"id": "builtin", "path": None, "data_root": None},
     "source_lock": None,
     "seed": 0,
-    "limits": {"max_states": 100_000, "target_literals": 400_000, "max_components": 4, "max_recursive_depth": 4},
-    "storage": {"membership_backend": "dafsa-json-v1", "literal_backend": "dict-json-v3", "pronunciation_codec": "utf8", "asset_format": "v3"},
+    "limits": {
+        "max_states": 100_000,
+        "target_literals": 400_000,
+        "max_components": 4,
+        "max_recursive_depth": 4,
+    },
+    "storage": {
+        "membership_backend": "dafsa-json-v1",
+        "literal_backend": "dict-json-v3",
+        "pronunciation_codec": "utf8",
+        "asset_format": "v3",
+    },
     "verification": {"required": True, "adversarial_misses": True},
-    "runtime": {"sample_size": 1000, "fresh_process": True, "repetitions": 3, "finalist_repetitions": 7},
+    "runtime": {
+        "sample_size": 1000,
+        "fresh_process": True,
+        "repetitions": 3,
+        "finalist_repetitions": 7,
+    },
     "output": "runs",
     "cases": [],
     "methods": {},
@@ -38,16 +54,49 @@ _VERIFICATION_KEYS = {"required", "adversarial_misses"}
 _RUNTIME_KEYS = {"sample_size", "fresh_process", "repetitions", "finalist_repetitions"}
 _METHOD_KEYS = {"compound", "morphology", "rewrite", "cart", "graphone", "neural", "selector"}
 _METHOD_OPTION_KEYS = {
-    "enabled", "boundary_rules", "linkers", "recursive_components", "segmentation_scorer",
-    "max_rules", "min_support", "max_bytes", "max_output_chunk_length", "order",
-    "max_graphemes_per_unit", "implementation", "kind", "max_serialized_bytes",
+    "enabled",
+    "boundary_rules",
+    "linkers",
+    "recursive_components",
+    "segmentation_scorer",
+    "max_rules",
+    "min_support",
+    "max_bytes",
+    "max_output_chunk_length",
+    "order",
+    "max_graphemes_per_unit",
+    "implementation",
+    "kind",
+    "max_serialized_bytes",
 }
 _CASE_KEYS = {
-    "name", "inherits", "source", "source_lock", "data_root", "path", "target_literals",
-    "max_components", "max_states", "optimizer", "selector", "boundary_rules", "linkers",
-    "recursive_components", "max_recursive_depth", "segmentation_scorer", "asset_format",
-    "membership_backend", "literal_backend", "pronunciation_codec", "methods", "storage",
-    "runtime", "verification", "mode", "max_passes", "strict",
+    "name",
+    "inherits",
+    "source",
+    "source_lock",
+    "data_root",
+    "path",
+    "target_literals",
+    "max_components",
+    "max_states",
+    "optimizer",
+    "selector",
+    "boundary_rules",
+    "linkers",
+    "recursive_components",
+    "max_recursive_depth",
+    "segmentation_scorer",
+    "asset_format",
+    "membership_backend",
+    "literal_backend",
+    "pronunciation_codec",
+    "methods",
+    "storage",
+    "runtime",
+    "verification",
+    "mode",
+    "max_passes",
+    "strict",
 }
 
 
@@ -61,7 +110,10 @@ class ResolvedConfig:
         return self.values
 
     def write(self, path: str | Path) -> None:
-        Path(path).write_text(json.dumps(self.values, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        Path(path).write_text(
+            json.dumps(self.values, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
 
 
 def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
@@ -85,15 +137,22 @@ def _validate_methods(methods: Any, where: str, strict: bool) -> dict[str, Any]:
     if methods is None:
         return {}
     if not isinstance(methods, dict):
-        raise ValueError(f"{where} must be a TOML table")
+        raise TypeError(f"{where} must be a TOML table")
     _check_keys(methods, _METHOD_KEYS, where, strict)
     for name, value in methods.items():
         if name == "selector" and isinstance(value, str):
-            if value not in {"static-priority", "priority", "rule-tree", "hashed-logistic", "forest", "gbdt"}:
+            if value not in {
+                "static-priority",
+                "priority",
+                "rule-tree",
+                "hashed-logistic",
+                "forest",
+                "gbdt",
+            }:
                 raise ValueError(f"unknown selector method: {value}")
             continue
         if not isinstance(value, dict):
-            raise ValueError(f"{where}.{name} must be a TOML table")
+            raise TypeError(f"{where}.{name} must be a TOML table")
         _check_keys(value, _METHOD_OPTION_KEYS, f"{where}.{name}", strict)
         if "enabled" in value and not isinstance(value["enabled"], bool):
             raise ValueError(f"{where}.{name}.enabled must be boolean")
@@ -103,7 +162,11 @@ def _validate_methods(methods: Any, where: str, strict: bool) -> dict[str, Any]:
 def _validate_storage(storage: dict[str, Any], where: str) -> None:
     for key in ("membership_backend", "literal_backend", "pronunciation_codec"):
         if key in storage:
-            values = {"membership_backend": MEMBERSHIP_BACKENDS, "literal_backend": LITERAL_BACKENDS, "pronunciation_codec": CODECS}[key]
+            values = {
+                "membership_backend": MEMBERSHIP_BACKENDS,
+                "literal_backend": LITERAL_BACKENDS,
+                "pronunciation_codec": CODECS,
+            }[key]
             if storage[key] not in values:
                 raise ValueError(f"unknown {key}: {storage[key]}")
     if storage.get("asset_format", "v3") not in {"v3", "v4"}:
@@ -138,8 +201,11 @@ def _expand_cases(raw: Any, strict: bool) -> list[dict[str, Any]]:
     elif isinstance(raw, list):
         values = raw
     else:
-        raise ValueError("cases must be a TOML array of tables or named table")
-    by_name = {str(item.get("name", f"case-{index + 1:03d}")): _normal_case(item, index, strict) for index, item in enumerate(values)}
+        raise TypeError("cases must be a TOML array of tables or named table")
+    by_name = {
+        str(item.get("name", f"case-{index + 1:03d}")): _normal_case(item, index, strict)
+        for index, item in enumerate(values)
+    }
     resolving: set[str] = set()
 
     def resolve(name: str) -> dict[str, Any]:
@@ -150,7 +216,9 @@ def _expand_cases(raw: Any, strict: bool) -> list[dict[str, Any]]:
         if not parent:
             return _merge({}, item)
         parent_names = [parent] if isinstance(parent, str) else parent
-        if not isinstance(parent_names, list) or not all(str(value) in by_name for value in parent_names):
+        if not isinstance(parent_names, list) or not all(
+            str(value) in by_name for value in parent_names
+        ):
             raise ValueError(f"case {name} inherits an unknown case")
         resolving.add(name)
         result: dict[str, Any] = {}
@@ -164,17 +232,23 @@ def _expand_cases(raw: Any, strict: bool) -> list[dict[str, Any]]:
 
 def resolve_config(value: dict[str, Any], *, path: str = "<memory>") -> ResolvedConfig:
     if not isinstance(value, dict):
-        raise ValueError("configuration root must be a TOML table")
+        raise TypeError("configuration root must be a TOML table")
     strict = bool(value.get("strict", True))
     _check_keys(value, _ROOT_KEYS, "configuration", strict)
     schema_version = int(value.get("schema_version", SCHEMA_VERSION))
     if schema_version != SCHEMA_VERSION:
         raise ValueError(f"unsupported configuration schema_version: {schema_version}")
     merged = _merge(DEFAULTS, value)
-    for name, allowed in (("source", _SOURCE_KEYS), ("limits", _LIMIT_KEYS), ("storage", _STORAGE_KEYS), ("verification", _VERIFICATION_KEYS), ("runtime", _RUNTIME_KEYS)):
+    for name, allowed in (
+        ("source", _SOURCE_KEYS),
+        ("limits", _LIMIT_KEYS),
+        ("storage", _STORAGE_KEYS),
+        ("verification", _VERIFICATION_KEYS),
+        ("runtime", _RUNTIME_KEYS),
+    ):
         section = merged.get(name)
         if not isinstance(section, dict):
-            raise ValueError(f"{name} must be a TOML table")
+            raise TypeError(f"{name} must be a TOML table")
         _check_keys(section, allowed, name, strict)
     _validate_storage(merged["storage"], "storage")
     _validate_methods(merged.get("methods", {}), "methods", strict)
@@ -182,7 +256,10 @@ def resolve_config(value: dict[str, Any], *, path: str = "<memory>") -> Resolved
     if not cases:
         raise ValueError("configuration must define at least one case")
     merged["cases"] = []
-    full_source = bool(merged.get("release_mode", False) or int(merged.get("expected_baseline_word_count", 0)) >= 738427)
+    full_source = bool(
+        merged.get("release_mode", False)
+        or int(merged.get("expected_baseline_word_count", 0)) >= 738427
+    )
     if full_source and not merged.get("source_lock"):
         raise ValueError("full-source configuration requires source_lock")
     for case in cases:
@@ -194,12 +271,16 @@ def resolve_config(value: dict[str, Any], *, path: str = "<memory>") -> Resolved
         _validate_storage(effective, f"case {case['name']} storage")
         runtime = _merge(merged["runtime"], case.get("runtime", {}))
         if int(runtime["sample_size"]) < 1 or int(runtime["repetitions"]) < 1:
-            raise ValueError(f"case {case['name']} runtime sample_size and repetitions must be positive")
+            raise ValueError(
+                f"case {case['name']} runtime sample_size and repetitions must be positive"
+            )
         if case.get("max_components", merged["limits"]["max_components"]) < 1:
             raise ValueError(f"case {case['name']} max_components must be positive")
         case["storage"] = effective
         case["runtime"] = runtime
-        case["effective_config_sha256"] = hashlib.sha256(json.dumps(case, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        case["effective_config_sha256"] = hashlib.sha256(
+            json.dumps(case, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
         merged["cases"].append(case)
     payload = json.dumps(merged, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     return ResolvedConfig(path, merged, hashlib.sha256(payload).hexdigest())

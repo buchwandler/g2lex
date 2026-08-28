@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from .membership import ExactMembership
+from .value import LexiconValue, logical_sha256, validate_value
 
 PronunciationTuple = tuple[str, ...]
 
@@ -27,6 +28,7 @@ class LiteralStore(Protocol):
     def serialized_bytes(self) -> int: ...
 
     def serialize_sections(self) -> Mapping[str, bytes]: ...
+
 
 @dataclass(frozen=True, slots=True)
 class SourceInfo:
@@ -121,16 +123,13 @@ class LiteralLexicon(Mapping[str, PronunciationTuple]):
 
     def __init__(self, values: Mapping[str, Iterable[str]] = ()) -> None:
         self._values = {
-            word: tuple(pronunciations)
-            for word, pronunciations in sorted(dict(values).items())
+            word: tuple(pronunciations) for word, pronunciations in sorted(dict(values).items())
         }
         lengths: dict[str, set[int]] = {}
         for word in self._values:
             if word:
                 lengths.setdefault(word[0], set()).add(len(word))
-        self._lengths_by_initial = {
-            key: tuple(sorted(value)) for key, value in lengths.items()
-        }
+        self._lengths_by_initial = {key: tuple(sorted(value)) for key, value in lengths.items()}
 
     def __getitem__(self, word: str) -> PronunciationTuple:
         return self._values[word]
@@ -157,8 +156,7 @@ class LiteralLexicon(Mapping[str, PronunciationTuple]):
         return tuple(
             text[position : position + length]
             for length in self._lengths_by_initial.get(text[position], ())
-            if position + length <= len(text)
-            and text[position : position + length] in self._values
+            if position + length <= len(text) and text[position : position + length] in self._values
         )
 
     @property
@@ -175,6 +173,49 @@ class LiteralLexicon(Mapping[str, PronunciationTuple]):
             separators=(",", ":"),
         ).encode("utf-8")
         return {"literals.json": data}
+
+
+@dataclass(slots=True)
+class TypedLexiconData:
+    """Canonical source data for exact typed lexicons."""
+
+    entries: dict[str, LexiconValue]
+    source: SourceInfo = field(default_factory=SourceInfo)
+    physical_rows: int | None = None
+    metadata: dict[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        normalized: dict[str, LexiconValue] = {}
+        for word, value in self.entries.items():
+            if not isinstance(word, str) or not word:
+                raise TypeError("lexicon keys must be non-empty strings")
+            validate_value(value)
+            normalized[word] = value
+        self.entries = normalized
+        if self.physical_rows is None:
+            self.physical_rows = len(self.entries)
+
+    @property
+    def words(self) -> tuple[str, ...]:
+        return tuple(self.entries)
+
+    @property
+    def logical_sha256(self) -> str:
+        return logical_sha256(self.entries)
+
+    def __len__(self) -> int:
+        return len(self.entries)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.entries)
+
+    def items(self) -> Iterable[tuple[str, LexiconValue]]:
+        return self.entries.items()
+
+    def get(self, word: str, default: object = None) -> LexiconValue | object:
+        return self.entries.get(word, default)
+
+
 @dataclass(frozen=True, slots=True)
 class CandidateMetrics:
     baseline_word_count: int
@@ -233,6 +274,7 @@ class ImplicitLexicon(Mapping[str, str]):
             return ()
 
         from .resolver import ResolveContext
+
         context = ResolveContext() if self._resolver is not None else None
         generated = self.runtime_program.reconstruct(
             word,
@@ -243,9 +285,7 @@ class ImplicitLexicon(Mapping[str, str]):
             context=context,
         )
         if generated is None:
-            raise RuntimeError(
-                f"known non-literal word could not be regenerated: {word!r}"
-            )
+            raise RuntimeError(f"known non-literal word could not be regenerated: {word!r}")
         return generated
 
     def lookup(self, word: str) -> str | None:

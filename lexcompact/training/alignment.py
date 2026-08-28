@@ -1,15 +1,20 @@
 """Deterministic monotonic spelling to pronunciation alignment."""
+
 from __future__ import annotations
 
-from functools import lru_cache
+from functools import cache
 
 
-def align(spelling: str, pronunciation: str, *, max_output_chunk_length: int = 4) -> tuple[tuple[str, str], ...]:
+def align(
+    spelling: str, pronunciation: str, *, max_output_chunk_length: int = 4
+) -> tuple[tuple[str, str], ...]:
     if max_output_chunk_length < 0:
         raise ValueError("max_output_chunk_length must be non-negative")
 
-    @lru_cache(maxsize=None)
-    def solve(position: int, output_position: int) -> tuple[tuple[int, tuple[tuple[str, str], ...]], ...]:
+    @cache
+    def solve(
+        position: int, output_position: int
+    ) -> tuple[tuple[int, tuple[tuple[str, str], ...]], ...]:
         if position == len(spelling):
             return ((0, ()),) if output_position == len(pronunciation) else ()
         candidates: list[tuple[int, tuple[tuple[str, str], ...]]] = []

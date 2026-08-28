@@ -1,8 +1,10 @@
 """Bounded shared German linker definitions and spelling search."""
+
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +47,7 @@ class LinkerTable:
                 position = word.find(linker.spelling, start)
                 if position < 0:
                     break
-                left, right = word[:position], word[position + len(linker.spelling):]
+                left, right = word[:position], word[position + len(linker.spelling) :]
                 if left in literals and right in literals and left and right:
                     found.append(LinkerCandidate(left, linker, right))
                 start = position + 1

@@ -25,7 +25,9 @@ def adversarial_misses(words: Iterable[str], *, limit: int = 256) -> tuple[str, 
     return tuple(sorted(unique[:limit]))
 
 
-def verify_candidate(candidate: Any, baseline: Any, *, miss_words: Iterable[str] | None = None) -> dict[str, Any]:
+def verify_candidate(
+    candidate: Any, baseline: Any, *, miss_words: Iterable[str] | None = None
+) -> dict[str, Any]:
     words = tuple(baseline.words)
     missing = pronunciation_mismatches = variant_count_mismatches = 0
     variant_order_mismatches = invariant_failures = 0
@@ -48,9 +50,16 @@ def verify_candidate(candidate: Any, baseline: Any, *, miss_words: Iterable[str]
     misses = tuple(miss_words or adversarial_misses(words))
     false_positives = sum(candidate.is_known(word) for word in misses)
     audit = audit_runtime_representation(candidate)
-    lossless = not any((missing, false_positives, pronunciation_mismatches,
-                        variant_count_mismatches, variant_order_mismatches,
-                        invariant_failures))
+    lossless = not any(
+        (
+            missing,
+            false_positives,
+            pronunciation_mismatches,
+            variant_count_mismatches,
+            variant_order_mismatches,
+            invariant_failures,
+        )
+    )
     return {
         "words_checked": len(words),
         "variants_checked": sum(len(baseline.lookup_all(word)) for word in words),

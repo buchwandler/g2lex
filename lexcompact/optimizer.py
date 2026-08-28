@@ -1,13 +1,14 @@
 """Offline utility-aware literal-basis promotion heuristic."""
+
 from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
 
 from .builder import BuildResult, build_implicit_lexicon
-from .model import LexiconData
 from .composer import ImplicitComposer
 from .linkers import LinkerTable
+from .model import LexiconData
 from .rules import RuleSet
 
 

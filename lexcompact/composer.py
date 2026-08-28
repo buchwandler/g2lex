@@ -6,11 +6,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from .linkers import LinkerTable
 from .prefix_index import LiteralPrefixIndex
 from .rules import RuleSet
-
 from .runtime import OverlayMapping
-from .linkers import LinkerTable
+
 
 class SearchLimitError(RuntimeError):
     """The bounded composer exceeded its configured state budget."""
@@ -23,6 +23,7 @@ class DerivationResult:
     rule_id: str
 
     linker: str | None = None
+
 
 def top_k_segmentations(
     word: str,
@@ -38,7 +39,7 @@ def top_k_segmentations(
         return ()
     states = 0
     cache: dict[tuple[int, int], tuple[tuple[str, ...], ...]] = {}
-    
+
     def visit(position: int, component_count: int) -> tuple[tuple[str, ...], ...]:
         nonlocal states
         key = (position, component_count)
@@ -61,8 +62,10 @@ def top_k_segmentations(
         result = tuple(sorted(set(candidates), key=segmentation_rank, reverse=True)[:k])
         cache[key] = result
         return result
-    
+
     return visit(0, 0)
+
+
 def segmentation_rank(
     components: tuple[str, ...],
 ) -> tuple[int, tuple[int, ...], tuple[str, ...]]:
@@ -112,7 +115,8 @@ def best_segmentation(
                 candidates,
                 key=scorer.key if scorer is not None else segmentation_rank,
             )
-            if candidates else None
+            if candidates
+            else None
         )
         cache[key] = result
         return result
@@ -148,6 +152,7 @@ class ImplicitComposer:
     recursive_components: bool = False
     max_recursive_depth: int = 4
     segmentation_scorer: Any | None = None
+
     def __post_init__(self) -> None:
         if self.rules is None:
             self.rules = RuleSet()
@@ -199,6 +204,7 @@ class ImplicitComposer:
         if self.recursive_components and resolver is not None:
             if context is None:
                 from .resolver import ResolveContext
+
                 context = ResolveContext()
             recursive_segments = resolver.segmentations(
                 word,

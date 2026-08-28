@@ -9,6 +9,7 @@ from typing import Any, Protocol
 
 from .selector import Candidate, RuleSelector
 
+
 @dataclass(slots=True)
 class RuleStats:
     usage_count: int = 0
@@ -87,9 +88,7 @@ class CompoundStressDemotionRule:
         variants: tuple[tuple[str, ...], ...],
     ) -> tuple[str, ...]:
         transformed = tuple(
-            values
-            if index == 0
-            else tuple(value.replace("ˈ", "ˌ", 1) for value in values)
+            values if index == 0 else tuple(value.replace("ˈ", "ˌ", 1) for value in values)
             for index, values in enumerate(variants)
         )
         return tuple("".join(parts) for parts in product(*transformed))
@@ -116,9 +115,11 @@ def rule_from_dict(value: Mapping[str, Any]) -> CompositionRule:
         rule = CompoundStressDemotionRule()
     elif rule_id == "C2":
         from .boundary_rules import FinalComponentStressDemotionRule
+
         rule = FinalComponentStressDemotionRule()
     elif rule_id == "C3":
         from .boundary_rules import BoundaryStressClassRule
+
         rule = BoundaryStressClassRule()
     else:
         raise ValueError(f"unknown composition rule: {rule_id}")
@@ -135,12 +136,11 @@ def rule_from_dict(value: Mapping[str, Any]) -> CompositionRule:
 class RuleSet:
     """Ordered global rules shared by the builder and runtime decoder."""
 
-    rules: tuple[CompositionRule, ...] = field(
-        default_factory=lambda: (ConcatenationRule(),)
-    )
+    rules: tuple[CompositionRule, ...] = field(default_factory=lambda: (ConcatenationRule(),))
     composer_version: str = "1"
 
     selector: RuleSelector | None = None
+
     def propose(
         self,
         word: str,
@@ -246,6 +246,7 @@ def default_rules(
         rules = (CompoundStressDemotionRule(),)
         if boundary_rules:
             from .boundary_rules import diagnostic_boundary_rules
+
             rules = (*rules, *diagnostic_boundary_rules())
         rules = (*rules, ConcatenationRule())
     else:

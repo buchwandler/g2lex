@@ -42,7 +42,9 @@ class SourceSpec:
         value = self.values.get("filename")
         return str(value) if value is not None else None
 
-    def source_info(self, *, path: Path | None = None, sha256: str = "", size_bytes: int | None = None) -> SourceInfo:
+    def source_info(
+        self, *, path: Path | None = None, sha256: str = "", size_bytes: int | None = None
+    ) -> SourceInfo:
         return SourceInfo(
             self.source_id,
             self.revision,
@@ -80,7 +82,9 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def resolve_source_path(spec: SourceSpec, data_root: Path | None = None, path: Path | None = None) -> Path | None:
+def resolve_source_path(
+    spec: SourceSpec, data_root: Path | None = None, path: Path | None = None
+) -> Path | None:
     if path is not None:
         return path
     if spec.kind == "package_json":
@@ -99,11 +103,21 @@ def resolve_source_path(spec: SourceSpec, data_root: Path | None = None, path: P
         data_root / (spec.revision or "") / spec.filename,
     )
     return next((candidate for candidate in candidates if candidate.is_file()), candidates[0])
+
+
 def _with_source(parsed: LexiconData, source: SourceInfo) -> LexiconData:
-    return LexiconData(parsed.entries, source, parsed.physical_rows, dict(parsed.metadata)).runtime_unique()
+    return LexiconData(
+        parsed.entries, source, parsed.physical_rows, dict(parsed.metadata)
+    ).runtime_unique()
 
 
-def load_source(source_id: str, *, data_root: Path | None = None, path: Path | None = None, manifest_path: Path = MANIFEST_PATH) -> LexiconData:
+def load_source(
+    source_id: str,
+    *,
+    data_root: Path | None = None,
+    path: Path | None = None,
+    manifest_path: Path = MANIFEST_PATH,
+) -> LexiconData:
     specs = load_manifest(manifest_path)
     try:
         spec = specs[source_id]
@@ -114,8 +128,17 @@ def load_source(source_id: str, *, data_root: Path | None = None, path: Path | N
         if not override.is_file():
             raise FileNotFoundError(f"source override does not exist: {override}")
         data = override.read_bytes()
-        parsed = parse_json_bytes(data, path=override, source_id=source_id) if override.suffix.lower() == ".json" else parse_tsv_bytes(data, path=override, source_id=source_id)
-        return _with_source(parsed, spec.source_info(path=override, sha256=hashlib.sha256(data).hexdigest(), size_bytes=len(data)))
+        parsed = (
+            parse_json_bytes(data, path=override, source_id=source_id)
+            if override.suffix.lower() == ".json"
+            else parse_tsv_bytes(data, path=override, source_id=source_id)
+        )
+        return _with_source(
+            parsed,
+            spec.source_info(
+                path=override, sha256=hashlib.sha256(data).hexdigest(), size_bytes=len(data)
+            ),
+        )
     if spec.kind == "package_json":
         package = str(spec.values["resource_package"])
         name = str(spec.values["resource_name"])
@@ -128,7 +151,9 @@ def load_source(source_id: str, *, data_root: Path | None = None, path: Path | N
                 "containing kokorog2p/de/data/de_gold.json; alternatively pass --path"
             ) from exc
         parsed = parse_json_bytes(data, source_id=source_id)
-        return _with_source(parsed, spec.source_info(size_bytes=len(data), sha256=hashlib.sha256(data).hexdigest()))
+        return _with_source(
+            parsed, spec.source_info(size_bytes=len(data), sha256=hashlib.sha256(data).hexdigest())
+        )
     resolved = resolve_source_path(spec, data_root, path)
     if resolved is None or not resolved.is_file():
         if spec.kind == "huggingface_file":
@@ -146,4 +171,6 @@ def load_source(source_id: str, *, data_root: Path | None = None, path: Path | N
         raise ValueError(f"Checksum mismatch for {resolved}: expected {expected}, got {actual}")
     data = resolved.read_bytes()
     parsed = parse_tsv_bytes(data, path=resolved, source_id=source_id)
-    return _with_source(parsed, spec.source_info(path=resolved, sha256=actual, size_bytes=len(data)))
+    return _with_source(
+        parsed, spec.source_info(path=resolved, sha256=actual, size_bytes=len(data))
+    )

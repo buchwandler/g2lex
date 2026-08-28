@@ -1,10 +1,12 @@
 """Bounded shared reconstruction stages for morphology and rewrites."""
+
 from __future__ import annotations
 
 import json
 from collections import Counter
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 from .model import PronunciationTuple
 from .runtime import ReconstructionCandidate
@@ -37,10 +39,15 @@ class AffixRule:
     min_stem_length: int = 1
 
     def as_dict(self) -> dict[str, object]:
-        return {"rule_id": self.rule_id, **{name: getattr(self, name) for name in self.__dataclass_fields__ if name != "rule_id"}}
+        return {
+            "rule_id": self.rule_id,
+            **{
+                name: getattr(self, name) for name in self.__dataclass_fields__ if name != "rule_id"
+            },
+        }
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "AffixRule":
+    def from_dict(cls, value: Mapping[str, object]) -> AffixRule:
         return cls(**{name: value[name] for name in cls.__dataclass_fields__ if name in value})
 
     def apply(self, word: str, context: Any) -> tuple[ReconstructionCandidate, ...]:
@@ -67,7 +74,15 @@ class AffixRule:
         if values is None:
             return ()
         transformed = tuple(self._transform(value) for value in values)
-        return (ReconstructionCandidate("morphology", transformed, str(self.rule_id), component_count=1, analysis_kind="affix"),)
+        return (
+            ReconstructionCandidate(
+                "morphology",
+                transformed,
+                str(self.rule_id),
+                component_count=1,
+                analysis_kind="affix",
+            ),
+        )
 
     def _transform(self, pronunciation: str) -> str:
         value = pronunciation
@@ -89,10 +104,18 @@ class MorphologyReconstructor:
         return tuple(candidate for rule in self.rules for candidate in rule.apply(word, context))
 
     def as_dict(self) -> Mapping[str, object]:
-        return {"stage_id": self.stage_id, "version": self.version, "rules": [rule.as_dict() for rule in self.rules]}
+        return {
+            "stage_id": self.stage_id,
+            "version": self.version,
+            "rules": [rule.as_dict() for rule in self.rules],
+        }
 
     def serialize_sections(self) -> Mapping[str, bytes]:
-        return {"reconstructor.morphology": json.dumps(self.as_dict(), sort_keys=True, separators=(",", ":")).encode()}
+        return {
+            "reconstructor.morphology": json.dumps(
+                self.as_dict(), sort_keys=True, separators=(",", ":")
+            ).encode()
+        }
 
 
 def _capitalization(word: str) -> str:
@@ -126,15 +149,33 @@ def mine_morphology(
                 if spelling_prefix and values and stem_values:
                     observations[("prefix", spelling_prefix, stem_values[0], values[0])] += 1
     rules: list[AffixRule] = []
-    for index, (kind, affix, stem_pronunciation, word_pronunciation) in enumerate(sorted(observations)):
+    for index, (kind, affix, stem_pronunciation, word_pronunciation) in enumerate(
+        sorted(observations)
+    ):
         if observations[(kind, affix, stem_pronunciation, word_pronunciation)] < min_support:
             continue
         if kind == "suffix":
-            added = word_pronunciation[len(stem_pronunciation) :] if word_pronunciation.startswith(stem_pronunciation) else ""
-            rules.append(AffixRule(index, spelling_suffix=affix, strip_suffix=affix, pronunciation_suffix_add=added))
+            added = (
+                word_pronunciation[len(stem_pronunciation) :]
+                if word_pronunciation.startswith(stem_pronunciation)
+                else ""
+            )
+            rules.append(
+                AffixRule(
+                    index, spelling_suffix=affix, strip_suffix=affix, pronunciation_suffix_add=added
+                )
+            )
         else:
-            added = word_pronunciation[: -len(stem_pronunciation)] if word_pronunciation.endswith(stem_pronunciation) else ""
-            rules.append(AffixRule(index, spelling_prefix=affix, strip_prefix=affix, pronunciation_prefix_add=added))
+            added = (
+                word_pronunciation[: -len(stem_pronunciation)]
+                if word_pronunciation.endswith(stem_pronunciation)
+                else ""
+            )
+            rules.append(
+                AffixRule(
+                    index, spelling_prefix=affix, strip_prefix=affix, pronunciation_prefix_add=added
+                )
+            )
         if len(rules) >= max_rules:
             break
     return tuple(rules)
@@ -163,7 +204,7 @@ class RewriteRule:
         return {name: getattr(self, name) for name in self.__dataclass_fields__}
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "RewriteRule":
+    def from_dict(cls, value: Mapping[str, object]) -> RewriteRule:
         return cls(**{name: value[name] for name in cls.__dataclass_fields__ if name in value})
 
     def applies(self, word: str, pronunciation: str, stage_id: str | None = None) -> bool:
@@ -199,31 +240,61 @@ class RewriteReconstructor:
         self.rules = tuple(sorted(rules, key=lambda rule: rule.rule_id))[:max_rules]
 
     def candidates(self, word: str, context: Any) -> tuple[ReconstructionCandidate, ...]:
-        base = context.get("candidates", ()) if isinstance(context, Mapping) else getattr(context, "candidates", ())
+        base = (
+            context.get("candidates", ())
+            if isinstance(context, Mapping)
+            else getattr(context, "candidates", ())
+        )
         result: list[ReconstructionCandidate] = []
         for candidate in base:
             pronunciation = candidate.pronunciation[0] if candidate.pronunciation else ""
             for rule in self.rules:
                 rewritten = rule.apply(word, pronunciation, candidate.stage_id)
                 if rewritten is not None:
-                    result.append(ReconstructionCandidate(self.stage_id, (rewritten,), str(rule.rule_id), analysis_kind="rewrite"))
+                    result.append(
+                        ReconstructionCandidate(
+                            self.stage_id, (rewritten,), str(rule.rule_id), analysis_kind="rewrite"
+                        )
+                    )
         return tuple(result)
 
     def as_dict(self) -> Mapping[str, object]:
-        return {"stage_id": self.stage_id, "version": self.version, "rules": [rule.as_dict() for rule in self.rules]}
+        return {
+            "stage_id": self.stage_id,
+            "version": self.version,
+            "rules": [rule.as_dict() for rule in self.rules],
+        }
 
     def serialize_sections(self) -> Mapping[str, bytes]:
-        return {"reconstructor.rewrite": json.dumps(self.as_dict(), sort_keys=True, separators=(",", ":")).encode()}
+        return {
+            "reconstructor.rewrite": json.dumps(
+                self.as_dict(), sort_keys=True, separators=(",", ":")
+            ).encode()
+        }
 
 
-def induce_rewrite_rules(observations: Iterable[Mapping[str, object]], *, max_rules: int = 4096) -> tuple[RewriteRule, ...]:
+def induce_rewrite_rules(
+    observations: Iterable[Mapping[str, object]], *, max_rules: int = 4096
+) -> tuple[RewriteRule, ...]:
     """Create shared rules from bounded edit observations, never full-word keys."""
     rules: list[RewriteRule] = []
     for index, row in enumerate(observations):
         pattern = str(row.get("pattern", ""))
         if not pattern or len(pattern) > int(row.get("max_context_length", 8)):
             continue
-        rules.append(RewriteRule(index, str(row.get("operation", "replace")), str(row.get("spelling_left", "")), str(row.get("spelling_right", "")), str(row.get("pronunciation_left", "")), str(row.get("pronunciation_right", "")), pattern, str(row.get("replacement", "")), row.get("source_stage")))
+        rules.append(
+            RewriteRule(
+                index,
+                str(row.get("operation", "replace")),
+                str(row.get("spelling_left", "")),
+                str(row.get("spelling_right", "")),
+                str(row.get("pronunciation_left", "")),
+                str(row.get("pronunciation_right", "")),
+                pattern,
+                str(row.get("replacement", "")),
+                row.get("source_stage"),
+            )
+        )
         if len(rules) >= max_rules:
             break
     return tuple(rules)

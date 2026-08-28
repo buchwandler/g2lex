@@ -1,4 +1,5 @@
 """Shared runtime abstractions for exact, oracle-free reconstruction."""
+
 from __future__ import annotations
 
 import json
@@ -34,7 +35,9 @@ class Reconstructor(Protocol):
 class CandidateSelector(Protocol):
     selector_id: str
 
-    def choose(self, word_features: Any, candidates: Sequence[ReconstructionCandidate]) -> ReconstructionCandidate | None: ...
+    def choose(
+        self, word_features: Any, candidates: Sequence[ReconstructionCandidate]
+    ) -> ReconstructionCandidate | None: ...
 
 
 @dataclass(slots=True)
@@ -74,6 +77,7 @@ class ComposerReconstructor:
 
     stage_id = "compound"
     version = "1"
+
     def __init__(self, composer: Any, stage_id: str = "compound") -> None:
         self.composer = composer
         self.stage_id = stage_id
@@ -89,19 +93,25 @@ class ComposerReconstructor:
         )
         if result is None:
             return ()
-        return (ReconstructionCandidate(
-            self.stage_id,
-            result.pronunciation,
-            result.rule_id,
-            component_count=len(result.components),
-            analysis_kind="composer",
-        ),)
+        return (
+            ReconstructionCandidate(
+                self.stage_id,
+                result.pronunciation,
+                result.rule_id,
+                component_count=len(result.components),
+                analysis_kind="composer",
+            ),
+        )
 
     def as_dict(self) -> Mapping[str, object]:
         return {"stage_id": self.stage_id, "version": self.version, "kind": "composer-adapter"}
 
     def serialize_sections(self) -> Mapping[str, bytes]:
-        return {"reconstructor.compound.json": json.dumps(self.as_dict(), sort_keys=True, separators=(",", ":")).encode()}
+        return {
+            "reconstructor.compound.json": json.dumps(
+                self.as_dict(), sort_keys=True, separators=(",", ":")
+            ).encode()
+        }
 
 
 @dataclass(slots=True)
@@ -116,7 +126,7 @@ class RuntimeProgram:
     legacy_composer: Any | None = None
 
     @classmethod
-    def from_composer(cls, composer: Any) -> "RuntimeProgram":
+    def from_composer(cls, composer: Any) -> RuntimeProgram:
         return cls(
             recursive_components=bool(composer.recursive_components),
             max_recursive_depth=int(composer.max_recursive_depth),
@@ -125,10 +135,20 @@ class RuntimeProgram:
         )
 
     @classmethod
-    def from_v4(cls, composer: Any, selector: CandidateSelector | None = None, *, stages: Sequence[Reconstructor] = (), stage_ids: Sequence[str] = ()) -> "RuntimeProgram":
+    def from_v4(
+        cls,
+        composer: Any,
+        selector: CandidateSelector | None = None,
+        *,
+        stages: Sequence[Reconstructor] = (),
+        stage_ids: Sequence[str] = (),
+    ) -> RuntimeProgram:
         selected_stages = tuple(stages)
         if not selected_stages:
-            selected_stages = tuple(ComposerReconstructor(composer, stage_id) for stage_id in (stage_ids or ("compound",)))
+            selected_stages = tuple(
+                ComposerReconstructor(composer, stage_id)
+                for stage_id in (stage_ids or ("compound",))
+            )
         return cls(
             selected_stages,
             selector,
@@ -148,8 +168,20 @@ class RuntimeProgram:
         resolver: Any | None = None,
     ) -> PronunciationTuple | None:
         if self.legacy_composer is not None:
-            return self.legacy_composer.derive(word, literals=literals, prefix_index=prefix_index, resolver=resolver, context=context)
-        runtime_context = {"base_context": context, "literals": literals, "membership": membership, "prefix_index": prefix_index, "resolver": resolver}
+            return self.legacy_composer.derive(
+                word,
+                literals=literals,
+                prefix_index=prefix_index,
+                resolver=resolver,
+                context=context,
+            )
+        runtime_context = {
+            "base_context": context,
+            "literals": literals,
+            "membership": membership,
+            "prefix_index": prefix_index,
+            "resolver": resolver,
+        }
         candidates: list[ReconstructionCandidate] = []
         for reconstructor in self.reconstructors:
             candidates.extend(reconstructor.candidates(word, runtime_context))
@@ -157,7 +189,11 @@ class RuntimeProgram:
             return None
         if self.selector is None:
             return candidates[0].pronunciation
-        features = {"word_length": len(word), "candidate_count": len(candidates), "stage_ids": tuple(sorted({item.stage_id for item in candidates}))}
+        features = {
+            "word_length": len(word),
+            "candidate_count": len(candidates),
+            "stage_ids": tuple(sorted({item.stage_id for item in candidates})),
+        }
         selected = self.selector.choose(features, tuple(candidates))
         return selected.pronunciation if selected is not None else None
 
@@ -168,15 +204,29 @@ class RuntimeProgram:
             "max_recursive_depth": self.max_recursive_depth,
             "max_states": self.max_states,
             "reconstructors": [dict(item.as_dict()) for item in self.reconstructors],
-            "selector": self.selector.as_dict() if self.selector is not None and hasattr(self.selector, "as_dict") else None,
+            "selector": self.selector.as_dict()
+            if self.selector is not None and hasattr(self.selector, "as_dict")
+            else None,
             "selector_id": getattr(self.selector, "selector_id", None),
         }
 
     def serialize_sections(self) -> Mapping[str, bytes]:
-        sections: dict[str, bytes] = {"runtime-program.json": json.dumps(self.as_dict(), sort_keys=True, separators=(",", ":")).encode()}
+        sections: dict[str, bytes] = {
+            "runtime-program.json": json.dumps(
+                self.as_dict(), sort_keys=True, separators=(",", ":")
+            ).encode()
+        }
         for reconstructor in self.reconstructors:
             sections.update(reconstructor.serialize_sections())
         return sections
 
 
-__all__ = ["CandidateSelector", "ComposerReconstructor", "OverlayMapping", "ReconstructionCandidate", "Reconstructor", "ResolvedValues", "RuntimeProgram"]
+__all__ = [
+    "CandidateSelector",
+    "ComposerReconstructor",
+    "OverlayMapping",
+    "ReconstructionCandidate",
+    "Reconstructor",
+    "ResolvedValues",
+    "RuntimeProgram",
+]

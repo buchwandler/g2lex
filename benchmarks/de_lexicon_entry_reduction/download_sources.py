@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Explicitly download pinned German benchmark sources."""
+
 from __future__ import annotations
+
 import argparse
 from pathlib import Path
+
 from .download import download_source
 from .sources import load_manifest
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -25,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error(str(exc))
         print(f"{source_id}\t{path}")
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

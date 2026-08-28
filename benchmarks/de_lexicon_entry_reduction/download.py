@@ -1,4 +1,5 @@
 """Explicit, pinned source downloads."""
+
 from __future__ import annotations
 
 import os
@@ -14,13 +15,17 @@ def source_url(spec: SourceSpec) -> str:
         raise ValueError(f"{spec.source_id} has no immutable download coordinates")
     return f"https://huggingface.co/{spec.values['repo_type']}s/{spec.values['repo_id']}/raw/{spec.revision}/{spec.filename}"
 
+
 def destination(spec: SourceSpec, root: Path | None = None) -> Path:
     cache = root or DEFAULT_CACHE_DIR
     if not spec.filename:
         raise ValueError(f"{spec.source_id} has no filename")
     return cache / spec.source_id / (spec.revision or "unversioned") / spec.filename
 
-def download_source(spec: SourceSpec, *, cache_dir: Path | None = None, force: bool = False) -> Path:
+
+def download_source(
+    spec: SourceSpec, *, cache_dir: Path | None = None, force: bool = False
+) -> Path:
     target = destination(spec, cache_dir)
     expected = str(spec.values.get("sha256", ""))
     if target.is_file() and not force:

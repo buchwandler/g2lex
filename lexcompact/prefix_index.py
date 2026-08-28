@@ -36,8 +36,7 @@ class MutableLiteralPrefixIndex:
         return tuple(
             word[position : position + length]
             for length in lengths
-            if position + length <= len(word)
-            and word[position : position + length] in literals
+            if position + length <= len(word) and word[position : position + length] in literals
         )
 
 
@@ -58,8 +57,7 @@ class LiteralPrefixIndex:
     def from_lengths(cls, lengths: Mapping[str, Iterable[int]]) -> LiteralPrefixIndex:
         return cls(
             tuple(
-                (initial, tuple(sorted(set(values))))
-                for initial, values in sorted(lengths.items())
+                (initial, tuple(sorted(set(values)))) for initial, values in sorted(lengths.items())
             )
         )
 
@@ -80,8 +78,7 @@ class LiteralPrefixIndex:
         return tuple(
             word[position : position + length]
             for length in self._lengths(word[position])
-            if position + length <= len(word)
-            and word[position : position + length] in literals
+            if position + length <= len(word) and word[position : position + length] in literals
         )
 
     @property

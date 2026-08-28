@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import tomllib
 
 from benchmarks.de_lexicon_entry_reduction.sources import ROOT, load_manifest

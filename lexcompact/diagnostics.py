@@ -3,17 +3,19 @@
 This module intentionally accepts the canonical source and expected pronunciations.
 It is an analysis tool and is never imported by the serialized runtime asset.
 """
+
 from __future__ import annotations
 
 import csv
 import difflib
 import json
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
-from .model import ImplicitLexicon, LexiconData
 from .composer import SearchLimitError, top_k_segmentations
+from .model import ImplicitLexicon, LexiconData
 
 
 def _rule_candidates(
@@ -26,10 +28,12 @@ def _rule_candidates(
     candidates: list[dict[str, Any]] = []
     for rule in asset.composer.rules.rules:
         if rule.applies(word, components, variants):
-            candidates.append({
-                "rule_id": rule.rule_id,
-                "pronunciation": rule.compose(word, components, variants),
-            })
+            candidates.append(
+                {
+                    "rule_id": rule.rule_id,
+                    "pronunciation": rule.compose(word, components, variants),
+                }
+            )
     return candidates
 
 
@@ -48,14 +52,21 @@ def _boundary_family(
         for values in variants[:-1]:
             offset += len(values[0]) if values else 0
             boundaries.append(offset)
-    local = bool(opcodes) and all(
-        any(abs(max(start, end) - boundary) <= window for boundary in boundaries)
-        for _, start, end, _, _ in opcodes
-    ) if boundaries else False
-    template = ";".join(
-        f"{tag}:{candidate[i1:i2]!r}->{expected[j1:j2]!r}"
-        for tag, i1, i2, j1, j2 in opcodes
-    ) or "equal"
+    local = (
+        bool(opcodes)
+        and all(
+            any(abs(max(start, end) - boundary) <= window for boundary in boundaries)
+            for _, start, end, _, _ in opcodes
+        )
+        if boundaries
+        else False
+    )
+    template = (
+        ";".join(
+            f"{tag}:{candidate[i1:i2]!r}->{expected[j1:j2]!r}" for tag, i1, i2, j1, j2 in opcodes
+        )
+        or "equal"
+    )
     if not local:
         family = "non-local mismatch"
     elif "ˈ" in candidate or "ˌ" in candidate or "ˈ" in expected or "ˌ" in expected:
@@ -97,7 +108,6 @@ def analyze_failures(
         classifications.setdefault(key, [])
 
     alternate = Counter()
-    selected_usage = Counter()
     topk_counts = Counter()
     family_counts: Counter[str] = Counter()
     family_patterns: dict[tuple[str, str], dict[str, Any]] = {}
@@ -119,9 +129,13 @@ def analyze_failures(
             candidates = _rule_candidates(asset, word, components)
             selected_rule = str(item.get("candidate_rule") or "unknown")
             selected_by_rule[selected_rule] += 1
-            exact_rules = [str(row["rule_id"]) for row in candidates if tuple(row["pronunciation"]) == expected]
+            exact_rules = [
+                str(row["rule_id"]) for row in candidates if tuple(row["pronunciation"]) == expected
+            ]
             alternate["selected_rule_exact"] += int(selected_rule in exact_rules)
-            alternate["alternate_existing_rule_exact"] += int(bool(exact_rules) and selected_rule not in exact_rules)
+            alternate["alternate_existing_rule_exact"] += int(
+                bool(exact_rules) and selected_rule not in exact_rules
+            )
             alternate["multiple_existing_rules_exact"] += int(len(exact_rules) > 1)
             alternate["no_existing_rule_exact"] += int(not exact_rules)
         try:
@@ -137,7 +151,10 @@ def analyze_failures(
             segmentations = ()
         exact_rank: int | None = None
         for rank, segmentation in enumerate(segmentations, 1):
-            if any(tuple(row["pronunciation"]) == expected for row in _rule_candidates(asset, word, segmentation)):
+            if any(
+                tuple(row["pronunciation"]) == expected
+                for row in _rule_candidates(asset, word, segmentation)
+            ):
                 exact_rank = rank
                 break
         if exact_rank == 1:
@@ -152,41 +169,48 @@ def analyze_failures(
         selected_by_rule[selected_rule] += 0
         actual = candidate[0] if candidate else ""
         expected_first = expected[0] if expected else ""
-        variants = tuple(asset.literals[component] for component in components) if components else None
+        variants = (
+            tuple(asset.literals[component] for component in components) if components else None
+        )
         boundary = _boundary_family(actual, expected_first, components, variants, boundary_window)
         family_counts[boundary["family"]] += 1
         key = (boundary["family"], boundary["template"])
-        pattern = family_patterns.setdefault(key, {
-            "support_count": 0,
-            "exact_count_if_applied": 0,
-            "conflict_count": 0,
-            "word_count": 0,
-            "component_count": len(components or ()),
-            "spelling_left_context": components[0][-3:] if components else "",
-            "spelling_right_context": components[-1][:3] if components else "",
-            "phoneme_left_context": actual[-3:],
-            "phoneme_right_context": expected_first[:3],
-            "edit_template": boundary["template"],
-        })
+        pattern = family_patterns.setdefault(
+            key,
+            {
+                "support_count": 0,
+                "exact_count_if_applied": 0,
+                "conflict_count": 0,
+                "word_count": 0,
+                "component_count": len(components or ()),
+                "spelling_left_context": components[0][-3:] if components else "",
+                "spelling_right_context": components[-1][:3] if components else "",
+                "phoneme_left_context": actual[-3:],
+                "phoneme_right_context": expected_first[:3],
+                "edit_template": boundary["template"],
+            },
+        )
         pattern["support_count"] += 1
         pattern["word_count"] += 1
-        mismatch_details.append({
-            "word": word,
-            "selected_segmentation": list(components or ()),
-            "component_count": len(components or ()),
-            "component_spellings": list(components or ()),
-            "selected_rule": selected_rule,
-            "candidate_pronunciation": list(candidate),
-            "expected_pronunciation": list(expected),
-            "stress_signature": [
-                {"count": sum(value.count("ˈ") for value in values), "values": list(values)}
-                for values in (variants or ())
-            ],
-            "boundary": boundary,
-            "word_length": len(word),
-            "component_lengths": [len(component) for component in components or ()],
-            "top_k_exact_rank": exact_rank,
-        })
+        mismatch_details.append(
+            {
+                "word": word,
+                "selected_segmentation": list(components or ()),
+                "component_count": len(components or ()),
+                "component_spellings": list(components or ()),
+                "selected_rule": selected_rule,
+                "candidate_pronunciation": list(candidate),
+                "expected_pronunciation": list(expected),
+                "stress_signature": [
+                    {"count": sum(value.count("ˈ") for value in values), "values": list(values)}
+                    for values in (variants or ())
+                ],
+                "boundary": boundary,
+                "word_length": len(word),
+                "component_lengths": [len(component) for component in components or ()],
+                "top_k_exact_rank": exact_rank,
+            }
+        )
 
     linker_summary = linker_diagnostics(source, asset)
     result: dict[str, Any] = {
@@ -223,7 +247,11 @@ def linker_diagnostics(source: LexiconData, asset: ImplicitLexicon) -> dict[str,
     """Measure linker candidate opportunities offline against expected IPA."""
     table = asset.composer.linkers
     if table is None:
-        return {"words_newly_segmentable_due_to_linkers": 0, "words_newly_exact_due_to_linkers": 0, "per_linker": {}}
+        return {
+            "words_newly_segmentable_due_to_linkers": 0,
+            "words_newly_exact_due_to_linkers": 0,
+            "per_linker": {},
+        }
     counts: dict[str, Counter[str]] = defaultdict(Counter)
     newly_segmentable = 0
     newly_exact = 0
@@ -254,6 +282,7 @@ def linker_diagnostics(source: LexiconData, asset: ImplicitLexicon) -> dict[str,
         "linker_rule_bytes": len(json.dumps(table.as_dict(), sort_keys=True).encode()),
     }
 
+
 def write_diagnostics(directory: Path, result: Mapping[str, Any]) -> None:
     """Write the stable JSON and TSV diagnostic artifacts."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -275,19 +304,35 @@ def write_diagnostics(directory: Path, result: Mapping[str, Any]) -> None:
     )
     patterns = result["boundary_patterns"][:100]
     fields = (
-        "support_count", "exact_count_if_applied", "conflict_count", "word_count",
-        "component_count", "spelling_left_context", "spelling_right_context",
-        "phoneme_left_context", "phoneme_right_context", "edit_template",
+        "support_count",
+        "exact_count_if_applied",
+        "conflict_count",
+        "word_count",
+        "component_count",
+        "spelling_left_context",
+        "spelling_right_context",
+        "phoneme_left_context",
+        "phoneme_right_context",
+        "edit_template",
     )
-    with (directory / "top_100_boundary_patterns.tsv").open("w", encoding="utf-8", newline="") as handle:
+    with (directory / "top_100_boundary_patterns.tsv").open(
+        "w", encoding="utf-8", newline=""
+    ) as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t")
         writer.writeheader()
-        writer.writerows({field: pattern.get(field, "") for field in fields} for pattern in patterns)
-    detail_fields = ("word", "selected_rule", "selected_segmentation", "candidate_pronunciation", "expected_pronunciation", "top_k_exact_rank")
+        writer.writerows(
+            {field: pattern.get(field, "") for field in fields} for pattern in patterns
+        )
+    detail_fields = (
+        "word",
+        "selected_rule",
+        "selected_segmentation",
+        "candidate_pronunciation",
+        "expected_pronunciation",
+        "top_k_exact_rank",
+    )
     with (directory / "failure_families.tsv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=detail_fields, delimiter="\t")
         writer.writeheader()
         for detail in result["failure_details"]:
             writer.writerow({field: detail.get(field, "") for field in detail_fields})
-
-

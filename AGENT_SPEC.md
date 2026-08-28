@@ -42,19 +42,19 @@ The inspected experiment states the runtime contract explicitly:
 
 The latest supplied reports all record the same verified German result:
 
-| Metric | Result |
-| --- | ---: |
-| Baseline logical words | 738,427 |
-| Retained literal words | 586,889 |
-| Implicit generated words | 151,538 |
-| Literal-entry reduction | 20.52% |
-| Target literals | <= 400,000 |
-| Target met | no |
-| Per-generated-word runtime recipes | 0 |
-| Missing words | 0 |
-| Extra membership hits | 0 |
-| Pronunciation mismatches | 0 |
-| Variant-order mismatches | 0 |
+| Metric                             |     Result |
+| ---------------------------------- | ---------: |
+| Baseline logical words             |    738,427 |
+| Retained literal words             |    586,889 |
+| Implicit generated words           |    151,538 |
+| Literal-entry reduction            |     20.52% |
+| Target literals                    | <= 400,000 |
+| Target met                         |         no |
+| Per-generated-word runtime recipes |          0 |
+| Missing words                      |          0 |
+| Extra membership hits              |          0 |
+| Pronunciation mismatches           |          0 |
+| Variant-order mismatches           |          0 |
 
 The new experiment also contains additional research machinery absent from the earliest version:
 
@@ -76,7 +76,6 @@ The new experiment also contains additional research machinery absent from the e
 
 All of those concepts should remain available or reproducible in the standalone repository.
 
-
 ### V3 delta from the newest supplied snapshot
 
 The newest snapshot adds two important runtime/build capabilities that must be
@@ -96,7 +95,6 @@ preserved in this standalone V3 MVP:
 The new snapshot threads these features through `ImplicitComposer`,
 `ComponentResolver`, `build_implicit_lexicon`, `optimize_basis`, serializer/load,
 and the experiment CLI. V3 must do the same.
-
 
 ---
 
@@ -324,8 +322,7 @@ The ZIP writer fixes member timestamps and sorting so repeated serializations ar
 
 `manifest.json` contains aggregate counts/provenance/config. `composer.json` contains bounded shared composer configuration and aggregate metadata, including V3's `recursive_components`, `max_recursive_depth`, and optional serialized `SegmentationScorer`. Neither may contain per-generated-word information.
 
-The standalone V3 container identifies itself as `lexcompact.asset.v3` / schema
-3. The loader may accept V2 assets by defaulting the new fields to
+The standalone V3 container identifies itself as `lexcompact.asset.v3` / schema 3. The loader may accept V2 assets by defaulting the new fields to
 non-recursive/no-scorer behavior.
 
 The runtime loader must never open the original source lexicon.

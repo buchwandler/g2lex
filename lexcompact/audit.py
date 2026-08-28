@@ -1,4 +1,5 @@
 """Recursive anti-cheating checks for the complete runtime representation."""
+
 from __future__ import annotations
 
 import json
@@ -8,11 +9,32 @@ from typing import Any
 from .model import ImplicitLexicon
 
 _FORBIDDEN_NAMES = {
-    "derived", "generated", "generated_words", "recipes", "recipe_by_word", "word_ids",
-    "rule_by_word", "split_by_word", "components_by_word", "selector_by_word", "repair_by_word",
-    "linker_by_word", "generated_ids", "exceptions_by_word", "candidate_by_word", "model_by_word",
+    "derived",
+    "generated",
+    "generated_words",
+    "recipes",
+    "recipe_by_word",
+    "word_ids",
+    "rule_by_word",
+    "split_by_word",
+    "components_by_word",
+    "selector_by_word",
+    "repair_by_word",
+    "linker_by_word",
+    "generated_ids",
+    "exceptions_by_word",
+    "candidate_by_word",
+    "model_by_word",
 }
-_FORBIDDEN_PATTERNS = ("word_to_", "_by_word", "per_word_", "exceptions_by_word", "stage_by_word", "model_by_word", "candidate_by_word")
+_FORBIDDEN_PATTERNS = (
+    "word_to_",
+    "_by_word",
+    "per_word_",
+    "exceptions_by_word",
+    "stage_by_word",
+    "model_by_word",
+    "candidate_by_word",
+)
 
 
 def _forbidden_name(value: object) -> bool:
@@ -45,7 +67,9 @@ def _serializable(value: Any) -> Any:
 
 def audit_runtime_representation(candidate: ImplicitLexicon) -> dict[str, Any]:
     """Reject per-word runtime data and return model/structure accounting."""
-    forbidden_fields = sorted(field.name for field in fields(candidate) if _forbidden_name(field.name))
+    forbidden_fields = sorted(
+        field.name for field in fields(candidate) if _forbidden_name(field.name)
+    )
     if forbidden_fields:
         raise AssertionError(f"forbidden runtime fields: {forbidden_fields}")
     inspected = {

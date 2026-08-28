@@ -1,8 +1,10 @@
 """Compact spelling/constituent segmentation scorer."""
+
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,7 +29,9 @@ class SegmentationScorer:
         values = (len(components), one_character, short, variance, max(0, len(components) - 1))
         return sum(weight * value for weight, value in zip(self.weights, values))
 
-    def key(self, components: tuple[str, ...]) -> tuple[int, tuple[int, tuple[int, ...], tuple[str, ...]]]:
+    def key(
+        self, components: tuple[str, ...]
+    ) -> tuple[int, tuple[int, tuple[int, ...], tuple[str, ...]]]:
         from .composer import segmentation_rank
 
         return self.score(components), segmentation_rank(components)

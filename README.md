@@ -1,5 +1,18 @@
 # lexcompact
 
+## V5 exact typed lexicons
+
+Lexcompact also provides a lossless, typed V5 binary format for scalar pronunciations, ordered variants, tagged values, explicit null selectors, and membership-only words. V5 files use UTF-8 front-coded keys and independently compressed record blocks. Filesystem loading is mmap-backed and decodes records on demand.
+
+```bash
+lexcompact pack us_gold.json us_gold.lxc --format kokoro-json
+lexcompact verify us_gold.json us_gold.lxc --format kokoro-json
+lexcompact inspect us_gold.lxc
+lexcompact export us_gold.lxc restored.jsonl --format jsonl
+lexcompact lookup us_gold.lxc live
+```
+
+Use `lexcompact.reduce` for the existing experimental resident-entry reduction workflow. V5 does not flatten tagged records or create capitalization alias entries. `CaseAliasMapping` and `LayeredLexicon` provide compatibility and explicit raw-record precedence for consumers such as KokoroG2P.
 `lexcompact` is a Python library and CLI for **lossless resident-entry reduction of pronunciation lexicons**.
 
 This V3 MVP follows the newest supplied KokoroG2P
@@ -86,6 +99,7 @@ python -m benchmarks.de_lexicon_entry_reduction.run_config config.toml
 ```
 
 The full German gate requires the exact source and refuses to claim results when it is unavailable.
+
 ## Repository layout
 
 There is deliberately **no `src/` directory**:
@@ -292,18 +306,18 @@ python -m benchmarks.de_lexicon_entry_reduction.verify \
 
 The supplied KokoroG2P reports still record this verified baseline candidate:
 
-| Metric | Result |
-| --- | ---: |
-| baseline logical words | 738,427 |
-| retained literal words | 586,889 |
-| implicit generated words | 151,538 |
-| literal-entry reduction | 20.52% |
-| per-generated-word runtime recipes | 0 |
-| missing words | 0 |
-| extra membership hits | 0 |
-| pronunciation mismatches | 0 |
-| variant-order mismatches | 0 |
-| target `<= 400,000` | not met |
+| Metric                             |  Result |
+| ---------------------------------- | ------: |
+| baseline logical words             | 738,427 |
+| retained literal words             | 586,889 |
+| implicit generated words           | 151,538 |
+| literal-entry reduction            |  20.52% |
+| per-generated-word runtime recipes |       0 |
+| missing words                      |       0 |
+| extra membership hits              |       0 |
+| pronunciation mismatches           |       0 |
+| variant-order mismatches           |       0 |
+| target `<= 400,000`                | not met |
 
 Those reports are retained as source evidence. The portable snapshot does not
 contain the large `de_gold.json` payload, so this MVP does not relabel those

@@ -1,4 +1,5 @@
 """Deterministic indexed binary container used by Lexcompact V4 assets."""
+
 from __future__ import annotations
 
 import hashlib
@@ -27,7 +28,9 @@ class Section:
 class V4Container(Mapping[str, memoryview]):
     """Validated read-only view of an indexed V4 container."""
 
-    def __init__(self, sections: Mapping[str, memoryview], *, schema: int = SCHEMA, owner: Any = None):
+    def __init__(
+        self, sections: Mapping[str, memoryview], *, schema: int = SCHEMA, owner: Any = None
+    ):
         self._sections = dict(sections)
         self.schema = schema
         self._owner = owner
@@ -71,7 +74,9 @@ def dumps(sections: Mapping[str, bytes | bytearray | memoryview], *, schema: int
         encoded_name = name.encode("utf-8")
         if len(encoded_name) > 65535:
             raise ValueError("V4 section name is too long")
-        output.extend(_ENTRY_HEAD.pack(len(encoded_name), offset, stored_size, raw_size, codec, _ALIGNMENT))
+        output.extend(
+            _ENTRY_HEAD.pack(len(encoded_name), offset, stored_size, raw_size, codec, _ALIGNMENT)
+        )
         output.extend(digest)
         output.extend(encoded_name)
     _HEADER.pack_into(output, 0, MAGIC, schema, len(entries), toc_offset)
@@ -94,7 +99,9 @@ def loads(data: bytes | bytearray | memoryview) -> V4Container:
     for _ in range(count):
         if cursor + _ENTRY_HEAD.size + _HASH_SIZE > len(view):
             raise ValueError("truncated V4 table of contents")
-        name_size, offset, stored_size, raw_size, codec, alignment = _ENTRY_HEAD.unpack_from(view, cursor)
+        name_size, offset, stored_size, raw_size, codec, alignment = _ENTRY_HEAD.unpack_from(
+            view, cursor
+        )
         cursor += _ENTRY_HEAD.size
         digest = bytes(view[cursor : cursor + _HASH_SIZE])
         cursor += _HASH_SIZE
@@ -124,9 +131,8 @@ def loads(data: bytes | bytearray | memoryview) -> V4Container:
 
 
 def load(path: str | Path) -> V4Container:
-    handle = Path(path).open("rb")
-    mapped = mmap.mmap(handle.fileno(), 0, access=mmap.ACCESS_READ)
-    handle.close()
+    with Path(path).open("rb") as handle:
+        mapped = mmap.mmap(handle.fileno(), 0, access=mmap.ACCESS_READ)
     try:
         return _with_owner(loads(mapped), mapped)
     except Exception:
@@ -147,4 +153,13 @@ def load_traversable(resource: Any) -> V4Container:
     return loads(resource.read_bytes())
 
 
-__all__ = ["MAGIC", "SCHEMA", "Section", "V4Container", "dumps", "loads", "load", "load_traversable"]
+__all__ = [
+    "MAGIC",
+    "SCHEMA",
+    "Section",
+    "V4Container",
+    "dumps",
+    "load",
+    "load_traversable",
+    "loads",
+]

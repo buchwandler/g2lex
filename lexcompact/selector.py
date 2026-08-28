@@ -1,9 +1,11 @@
 """Compact oracle-free selectors for competing composition candidates."""
+
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,8 +77,7 @@ def extract_features(
         for value in (values[0] if values else "",)
     )
     stress_counts = tuple(
-        sum(value.count("ˈ") + value.count("ˌ") for value in values)
-        for values in variants
+        sum(value.count("ˈ") + value.count("ˌ") for value in values) for values in variants
     )
     first = components[0] if components else ""
     last = components[-1] if components else ""
@@ -115,7 +116,12 @@ class SelectorPredicate:
         return _stable_value(actual) == self.value
 
     def as_dict(self) -> dict[str, Any]:
-        return {"feature": self.feature, "value": self.value, "rule_id": self.rule_id, "support": self.support}
+        return {
+            "feature": self.feature,
+            "value": self.value,
+            "rule_id": self.rule_id,
+            "support": self.support,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,4 +233,6 @@ def train_selector(
         if support >= min_support and support == total:
             predicates.append(SelectorPredicate(feature, value, target, support))
     predicates.sort(key=lambda item: (-item.support, item.feature, item.value, item.rule_id))
-    return RuleSelector(tuple(predicates[:max_leaves]), default_rule, min_support=min_support, max_leaves=max_leaves)
+    return RuleSelector(
+        tuple(predicates[:max_leaves]), default_rule, min_support=min_support, max_leaves=max_leaves
+    )

@@ -1,10 +1,11 @@
 """Compact categorical CART-like grapheme to pronunciation model."""
+
 from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Iterable, Mapping
 
 from .runtime import ReconstructionCandidate
 from .training.alignment import align
@@ -23,7 +24,11 @@ def feature_key(word: str, position: int, previous_output: str = "") -> tuple[st
         return word[index]
 
     return (
-        at(position - 2), at(position - 1), at(position), at(position + 1), at(position + 2),
+        at(position - 2),
+        at(position - 1),
+        at(position),
+        at(position + 1),
+        at(position + 2),
         "upper" if word[position].isupper() else "lower" if word[position].islower() else "other",
         str(_length_bucket(len(word))),
         str(min(7, position * 8 // max(1, len(word)))),
@@ -49,24 +54,36 @@ class CARTModel:
         return "".join(output)
 
     def as_dict(self) -> dict[str, object]:
-        return {"version": self.version, "default_output": self.default_output, "max_bytes": self.max_bytes, "table": [[list(key), value] for key, value in self.table]}
+        return {
+            "version": self.version,
+            "default_output": self.default_output,
+            "max_bytes": self.max_bytes,
+            "table": [[list(key), value] for key, value in self.table],
+        }
 
     def serialize(self) -> bytes:
-        return json.dumps(self.as_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+        return json.dumps(
+            self.as_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode()
 
     @property
     def serialized_bytes(self) -> int:
         return len(self.serialize())
 
     @classmethod
-    def from_dict(cls, value: Mapping[str, object]) -> "CARTModel":
-        model = cls(tuple((tuple(key), str(output)) for key, output in value.get("table", ())), str(value.get("default_output", "")), int(value.get("max_bytes", 1024 * 1024)), str(value.get("version", "cart-v1")))
+    def from_dict(cls, value: Mapping[str, object]) -> CARTModel:
+        model = cls(
+            tuple((tuple(key), str(output)) for key, output in value.get("table", ())),
+            str(value.get("default_output", "")),
+            int(value.get("max_bytes", 1024 * 1024)),
+            str(value.get("version", "cart-v1")),
+        )
         if model.serialized_bytes > model.max_bytes:
             raise ValueError("CART model exceeds byte budget")
         return model
 
     @classmethod
-    def deserialize(cls, data: bytes) -> "CARTModel":
+    def deserialize(cls, data: bytes) -> CARTModel:
         return cls.from_dict(json.loads(data))
 
 
@@ -80,7 +97,9 @@ def train_cart(
     all_outputs: Counter[str] = Counter()
     for spelling, pronunciation in pairs:
         previous = ""
-        for position, (_, chunk) in enumerate(align(spelling, pronunciation, max_output_chunk_length=max_output_chunk_length)):
+        for position, (_, chunk) in enumerate(
+            align(spelling, pronunciation, max_output_chunk_length=max_output_chunk_length)
+        ):
             key = feature_key(spelling, position, previous)
             counts[key][chunk] += 1
             all_outputs[chunk] += 1
@@ -105,7 +124,11 @@ class CARTReconstructor:
         self.model = model
 
     def candidates(self, word: str, context: object = None) -> tuple[ReconstructionCandidate, ...]:
-        return (ReconstructionCandidate(self.stage_id, (self.model.predict(word),), score=0, analysis_kind="cart"),)
+        return (
+            ReconstructionCandidate(
+                self.stage_id, (self.model.predict(word),), score=0, analysis_kind="cart"
+            ),
+        )
 
     def as_dict(self):
         return {"stage_id": self.stage_id, "version": self.version, "model": self.model.as_dict()}
