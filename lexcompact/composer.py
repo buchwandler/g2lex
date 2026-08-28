@@ -9,6 +9,7 @@ from typing import Any
 from .prefix_index import LiteralPrefixIndex
 from .rules import RuleSet
 
+from .runtime import OverlayMapping
 from .linkers import LinkerTable
 
 class SearchLimitError(RuntimeError):
@@ -206,16 +207,17 @@ class ImplicitComposer:
                 max_states=self.max_states,
             )
             for recursive_components in recursive_segments:
-                resolved_literals = dict(literals)
+                ephemeral: dict[str, tuple[str, ...]] = {}
                 complete = True
                 for component in recursive_components:
                     pronunciation = resolver.resolve(component, context)
                     if pronunciation is None:
                         complete = False
                         break
-                    resolved_literals[component] = pronunciation
+                    ephemeral[component] = pronunciation
                 if not complete:
                     continue
+                resolved_literals = OverlayMapping(literals, ephemeral)
                 rule_id, pronunciation = self.rules.derive_with_rule(
                     word, recursive_components, resolved_literals
                 )
@@ -224,8 +226,10 @@ class ImplicitComposer:
         if self.linkers is None:
             return None
         for linker_candidate in self.linkers.candidates(word, literals):
-            temporary_literals = dict(literals)
-            temporary_literals[linker_candidate.linker.spelling] = linker_candidate.linker.pronunciation
+            temporary_literals = OverlayMapping(
+                literals,
+                {linker_candidate.linker.spelling: linker_candidate.linker.pronunciation},
+            )
             linker_components = linker_candidate.components
             rule_id, pronunciation = self.rules.derive_with_rule(
                 word, linker_components, temporary_literals

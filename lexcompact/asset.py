@@ -103,6 +103,10 @@ def save(path: str | Path, asset: ImplicitLexicon) -> None:
 
 
 def loads(data: bytes) -> ImplicitLexicon:
+    if data[:4] == b"LXC4":
+        from .asset_v4 import loads as loads_v4
+
+        return loads_v4(data)
     with zipfile.ZipFile(io.BytesIO(data), "r") as archive:
         names = set(archive.namelist())
         required = {
@@ -156,7 +160,14 @@ def loads(data: bytes) -> ImplicitLexicon:
 
 
 def load(path: str | Path) -> ImplicitLexicon:
-    return loads(Path(path).read_bytes())
+    path = Path(path)
+    with path.open("rb") as handle:
+        magic = handle.read(4)
+    if magic == b"LXC4":
+        from .asset_v4 import load as load_v4
+
+        return load_v4(path)
+    return loads(path.read_bytes())
 
 
 def load_traversable(resource: Any) -> ImplicitLexicon:

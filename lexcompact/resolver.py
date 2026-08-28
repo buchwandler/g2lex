@@ -25,14 +25,9 @@ class ComponentResolver:
     prefix_index: Any
     max_depth: int = 4
     max_states: int = 100_000
-    _lengths: dict[str, tuple[int, ...]] = field(init=False, repr=False)
-
     def __post_init__(self) -> None:
-        lengths: dict[str, set[int]] = {}
-        for word in self.membership.iter_words():
-            if word:
-                lengths.setdefault(word[0], set()).add(len(word))
-        self._lengths = {key: tuple(sorted(value)) for key, value in lengths.items()}
+        # Prefix traversal is delegated to the exact membership backend.
+        pass
 
     def resolve(self, word: str, context: ResolveContext | None = None) -> tuple[str, ...] | None:
         context = context or ResolveContext()
@@ -92,11 +87,10 @@ class ComponentResolver:
                 cache[key] = ()
                 return ()
             candidates: list[tuple[str, ...]] = []
-            for length in self._lengths.get(word[position], ()):
-                end = position + length
-                if end > len(word) or (end == len(word) and count == 0):
+            for atom in self.membership.prefixes(word, position):
+                end = position + len(atom)
+                if end == len(word) and count == 0:
                     continue
-                atom = word[position:end]
                 if not self.membership.contains(atom):
                     continue
                 if self.resolve(atom, context) is None:

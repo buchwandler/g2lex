@@ -4,10 +4,28 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol
 
+from .membership import ExactMembership
 PronunciationTuple = tuple[str, ...]
 
+
+class LiteralStore(Protocol):
+    """Immutable exact spelling to ordered-pronunciation storage."""
+
+    backend_id: str
+
+    def __contains__(self, word: object) -> bool: ...
+    def get(self, word: str, default: Any = None) -> PronunciationTuple | Any: ...
+    def __getitem__(self, word: str) -> PronunciationTuple: ...
+    def __iter__(self) -> Iterator[str]: ...
+    def __len__(self) -> int: ...
+    def prefixes(self, text: str, position: int = 0) -> tuple[str, ...]: ...
+
+    @property
+    def serialized_bytes(self) -> int: ...
+
+    def serialize_sections(self) -> Mapping[str, bytes]: ...
 
 @dataclass(frozen=True, slots=True)
 class SourceInfo:
@@ -96,12 +114,21 @@ class LexiconData:
 
 
 class LiteralLexicon(Mapping[str, PronunciationTuple]):
-    """Read-only resident pronunciation table for literal words."""
+    """Legacy resident pronunciation table implementing ``LiteralStore``."""
+
+    backend_id = "dict-json-v3"
 
     def __init__(self, values: Mapping[str, Iterable[str]] = ()) -> None:
         self._values = {
             word: tuple(pronunciations)
             for word, pronunciations in sorted(dict(values).items())
+        }
+        lengths: dict[str, set[int]] = {}
+        for word in self._values:
+            if word:
+                lengths.setdefault(word[0], set()).add(len(word))
+        self._lengths_by_initial = {
+            key: tuple(sorted(value)) for key, value in lengths.items()
         }
 
     def __getitem__(self, word: str) -> PronunciationTuple:
@@ -113,6 +140,9 @@ class LiteralLexicon(Mapping[str, PronunciationTuple]):
     def __len__(self) -> int:
         return len(self._values)
 
+    def __contains__(self, word: object) -> bool:
+        return word in self._values
+
     def get(self, word: str, default: Any = None) -> PronunciationTuple | Any:
         return self._values.get(word, default)
 
@@ -120,7 +150,30 @@ class LiteralLexicon(Mapping[str, PronunciationTuple]):
     def words(self) -> tuple[str, ...]:
         return tuple(self._values)
 
+    def prefixes(self, text: str, position: int = 0) -> tuple[str, ...]:
+        if position >= len(text):
+            return ()
+        return tuple(
+            text[position : position + length]
+            for length in self._lengths_by_initial.get(text[position], ())
+            if position + length <= len(text)
+            and text[position : position + length] in self._values
+        )
 
+    @property
+    def serialized_bytes(self) -> int:
+        return len(self.serialize_sections()["literals.json"])
+
+    def serialize_sections(self) -> Mapping[str, bytes]:
+        import json
+
+        data = json.dumps(
+            {word: list(values) for word, values in self._values.items()},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return {"literals.json": data}
 @dataclass(frozen=True, slots=True)
 class CandidateMetrics:
     baseline_word_count: int
@@ -146,11 +199,30 @@ class ImplicitLexicon(Mapping[str, str]):
     """Reloadable lossless lexicon with no per-generated-word recipe table."""
 
     source: SourceInfo
-    literals: LiteralLexicon
+    literals: LiteralStore
     literal_index: Any
-    membership: Any
+    membership: ExactMembership
     composer: Any
     metadata: dict[str, object] = field(default_factory=dict)
+    runtime_program: Any | None = field(default=None, repr=False)
+    _resolver: Any | None = field(default=None, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        from .runtime import RuntimeProgram
+
+        if self.runtime_program is None:
+            self.runtime_program = RuntimeProgram.from_composer(self.composer)
+        if self.runtime_program.recursive_components:
+            from .resolver import ComponentResolver
+
+            self._resolver = ComponentResolver(
+                self.membership,
+                self.composer,
+                self.literals,
+                self.literal_index,
+                max_depth=self.runtime_program.max_recursive_depth,
+                max_states=self.runtime_program.max_states,
+            )
 
     def lookup_all(self, word: str) -> PronunciationTuple:
         literal = self.literals.get(word)
@@ -159,26 +231,14 @@ class ImplicitLexicon(Mapping[str, str]):
         if not self.membership.contains(word):
             return ()
 
-        resolver = None
-        context = None
-        if self.composer.recursive_components:
-            from .resolver import ComponentResolver, ResolveContext
-
-            context = ResolveContext()
-            resolver = ComponentResolver(
-                self.membership,
-                self.composer,
-                self.literals,
-                self.literal_index,
-                max_depth=self.composer.max_recursive_depth,
-                max_states=self.composer.max_states,
-            )
-
-        generated = self.composer.derive(
+        from .resolver import ResolveContext
+        context = ResolveContext() if self._resolver is not None else None
+        generated = self.runtime_program.reconstruct(
             word,
             literals=self.literals,
+            membership=self.membership,
             prefix_index=self.literal_index,
-            resolver=resolver,
+            resolver=self._resolver,
             context=context,
         )
         if generated is None:
@@ -228,7 +288,7 @@ class ImplicitLexicon(Mapping[str, str]):
         baseline_count = self.metadata.get("baseline_word_count")
         if baseline_count is not None:
             return int(baseline_count)
-        return len(self.membership.iter_words())
+        return int(self.membership.word_count)
 
     def __contains__(self, word: object) -> bool:
         return isinstance(word, str) and self.is_known(word)

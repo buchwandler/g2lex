@@ -73,6 +73,19 @@ Lookup is exact:
 Exact membership is essential: arbitrary OOV strings that happen to be
 compositionally possible must remain misses.
 
+## V4 foundations
+
+The V4 runtime exposes replaceable exact membership and literal-store contracts, a shared `RuntimeProgram`, ephemeral `ReconstructionCandidate` values, and non-copying `OverlayMapping` recursion. It includes packed membership and literal controls, deterministic reversible codecs, bounded CART and graphone G2P stages, morphology and rewrite stages, candidate selectors, and optional pure-data neural-family experiments.
+
+V4 assets use the indexed `LXC4` container. Sections are sorted, aligned, hashed, and safe to load from a memory map. Legacy V2 and V3 ZIP assets remain supported by the dispatch loader.
+
+Benchmark cases are configured in TOML and run with:
+
+```bash
+python -m benchmarks.de_lexicon_entry_reduction.run_config config.toml
+```
+
+The full German gate requires the exact source and refuses to claim results when it is unavailable.
 ## Repository layout
 
 There is deliberately **no `src/` directory**:

@@ -106,6 +106,13 @@ def load_source(source_id: str, *, data_root: Path | None = None, path: Path | N
         spec = specs[source_id]
     except KeyError as exc:
         raise ValueError(f"Unknown lexicon source: {source_id}") from exc
+    if path is not None:
+        override = Path(path)
+        if not override.is_file():
+            raise FileNotFoundError(f"source override does not exist: {override}")
+        data = override.read_bytes()
+        parsed = parse_json_bytes(data, path=override, source_id=source_id) if override.suffix.lower() == ".json" else parse_tsv_bytes(data, path=override, source_id=source_id)
+        return _with_source(parsed, spec.source_info(path=override, sha256=hashlib.sha256(data).hexdigest(), size_bytes=len(data)))
     if spec.kind == "package_json":
         package = str(spec.values["resource_package"])
         name = str(spec.values["resource_name"])

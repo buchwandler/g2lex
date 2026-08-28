@@ -3,7 +3,8 @@
 from __future__ import annotations
 import argparse, csv, json
 from pathlib import Path
-from lexcompact.asset import load, save, runtime_asset_bytes
+from lexcompact.asset import load, runtime_asset_bytes, save
+from lexcompact.asset_v4 import save as save_v4
 from lexcompact.builder import build_implicit_lexicon
 from lexcompact.optimizer import optimize_basis
 from lexcompact.profiles.german import german_linker_table, german_rules
@@ -47,7 +48,7 @@ def run(source_id: str, mode: str, output: Path, *, data_root: Path | None = Non
         optimizer: str = "greedy", max_passes: int = 4, selector: str = "v1",
         boundary_rules: str = "v1", linkers: str = "v1",
         recursive_components: bool = False, max_recursive_depth: int = 4,
-        segmentation_scorer: str = "v1") -> dict[str, object]:
+        segmentation_scorer: str = "v1", asset_format: str = "v3") -> dict[str, object]:
     source = load_source(source_id, data_root=data_root, path=path)
     compound = mode == "implicit-compound"
     use_boundary = boundary_rules == "v2"
@@ -98,12 +99,15 @@ def run(source_id: str, mode: str, output: Path, *, data_root: Path | None = Non
     build.asset.metadata["target_literal_word_count"] = target_literals
     output.mkdir(parents=True, exist_ok=True)
     asset_path = output / "candidate.lxc"
-    save(asset_path, build.asset)
+    if asset_format not in ("v3", "v4"):
+        raise ValueError(f"unknown asset format: {asset_format}")
+    (save_v4 if asset_format == "v4" else save)(asset_path, build.asset)
     reloaded = load(asset_path)
     verification = verify_candidate(reloaded, source)
     summary = summary_dict(build, verification=verification, asset_bytes=runtime_asset_bytes(asset_path))
     summary.update({
         "mode": mode,
+        "asset_format": asset_format,
         "optimizer": optimizer,
         "selector": selector,
         "boundary_rules": boundary_rules,
@@ -146,6 +150,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-passes", type=int, default=4)
     parser.add_argument("--data-root", type=Path)
     parser.add_argument("--path", type=Path)
+    parser.add_argument("--asset-format", choices=("v3", "v4"), default="v3")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     run(args.source, args.mode, args.output, data_root=args.data_root, path=args.path,
@@ -154,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
         selector=args.selector, boundary_rules=args.boundary_rules, linkers=args.linkers,
         recursive_components=args.recursive_components,
         max_recursive_depth=args.max_recursive_depth,
-        segmentation_scorer=args.segmentation_scorer)
+        segmentation_scorer=args.segmentation_scorer, asset_format=args.asset_format)
     return 0
 
 if __name__ == "__main__":

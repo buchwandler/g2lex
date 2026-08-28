@@ -121,7 +121,7 @@ def build_implicit_lexicon(
                 }
             )
 
-    enumeration_matches = membership.iter_words() == tuple(sorted(source.words))
+    enumeration_matches = tuple(membership.iter_words()) == tuple(sorted(source.words))
     metadata: dict[str, object] = {
         "schema": 1,
         "kind": "implicit-entry-reduction",

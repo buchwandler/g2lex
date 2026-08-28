@@ -22,14 +22,19 @@ _FORBIDDEN_NAMES = {
     "linker_by_word",
     "generated_ids",
 }
+_FORBIDDEN_PATTERNS = ("word_to_", "_by_word", "per_word_", "exceptions_by_word", "stage_by_word", "model_by_word", "candidate_by_word")
+
+
+def _forbidden_name(value: object) -> bool:
+    name = str(value).lower()
+    return name in _FORBIDDEN_NAMES or any(pattern in name for pattern in _FORBIDDEN_PATTERNS)
 
 
 def _audit_mapping(value: Any, path: str = "") -> list[str]:
     findings: list[str] = []
     if isinstance(value, dict):
         for key, child in value.items():
-            key_name = str(key).lower()
-            if key_name in _FORBIDDEN_NAMES:
+            if _forbidden_name(key):
                 findings.append(f"{path}.{key}")
             findings.extend(_audit_mapping(child, f"{path}.{key}"))
     elif isinstance(value, (list, tuple)):
@@ -41,12 +46,11 @@ def _audit_mapping(value: Any, path: str = "") -> list[str]:
 def audit_runtime_representation(candidate: ImplicitLexicon) -> dict[str, Any]:
     """Reject obvious per-generated-word structures and return audit counts."""
 
-    field_names = {field.name for field in fields(candidate)}
-    forbidden_fields = sorted(field_names & _FORBIDDEN_NAMES)
+    forbidden_fields = sorted(field.name for field in fields(candidate) if _forbidden_name(field.name))
     if forbidden_fields:
         raise AssertionError(f"forbidden runtime fields: {forbidden_fields}")
     metadata_names = set(candidate.metadata)
-    forbidden_metadata = sorted(metadata_names & _FORBIDDEN_NAMES)
+    forbidden_metadata = sorted(name for name in metadata_names if _forbidden_name(name))
     if forbidden_metadata:
         raise AssertionError(f"forbidden runtime metadata: {forbidden_metadata}")
     serialized_findings = _audit_mapping(candidate.composer.rules.as_dict(), "rules")
