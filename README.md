@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/buchwandler/g2lex/graph/badge.svg?token=yWCTDNP3mF)](https://codecov.io/gh/buchwandler/g2lex)
+
 # G2Lex
 
 G2Lex compiles pronunciation dictionaries into deterministic, mmap-friendly
