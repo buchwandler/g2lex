@@ -1,0 +1,113 @@
+---
+schema_version: 2
+object_type: release_entry
+versioning:
+  schema_version: 1
+  revision: 1
+entry_id: entry-0005
+release_version: v0.1.0
+kind: added
+summary:
+  Added typed lexicon storage with deterministic assets, lazy lookup, source
+  adapters, layering, and exact verification
+status: accepted
+audience: null
+scopes: []
+source_refs:
+  - git:c3482cbf8211756f7bc2b92449c150b57d25e8fc
+paths:
+  - AGENT_SPEC.md
+  - README.md
+  - VALIDATION.md
+  - benchmarks/de_lexicon_entry_reduction/aggregate_results.py
+  - benchmarks/de_lexicon_entry_reduction/analyze_failures.py
+  - benchmarks/de_lexicon_entry_reduction/benchmark_memory.py
+  - benchmarks/de_lexicon_entry_reduction/config.py
+  - benchmarks/de_lexicon_entry_reduction/download.py
+  - benchmarks/de_lexicon_entry_reduction/download_sources.py
+  - benchmarks/de_lexicon_entry_reduction/full_source_gate.py
+  - benchmarks/de_lexicon_entry_reduction/lock_source.py
+  - benchmarks/de_lexicon_entry_reduction/run.py
+  - benchmarks/de_lexicon_entry_reduction/run_config.py
+  - benchmarks/de_lexicon_entry_reduction/run_matrix.py
+  - benchmarks/de_lexicon_entry_reduction/sources.py
+  - benchmarks/de_lexicon_entry_reduction/tests/test_crane_wiktionary_benchmark.py
+  - benchmarks/de_lexicon_entry_reduction/tests/test_download_setup.py
+  - benchmarks/de_lexicon_entry_reduction/tests/test_entry_reduction.py
+  - benchmarks/de_lexicon_entry_reduction/tests/test_pack_manifest.py
+  - benchmarks/de_lexicon_entry_reduction/verify.py
+  - benchmarks/lexicon_runtime/__init__.py
+  - benchmarks/lexicon_runtime/benchmark_kokorog2p_compat.py
+  - benchmarks/lexicon_runtime/benchmark_load.py
+  - benchmarks/lexicon_runtime/benchmark_lookup.py
+  - benchmarks/lexicon_runtime/benchmark_memory.py
+  - benchmarks/lexicon_runtime/benchmark_package_size.py
+  - lexcompact/__init__.py
+  - lexcompact/_version.py
+  - lexcompact/adapters/__init__.py
+  - lexcompact/adapters/common.py
+  - lexcompact/adapters/json_map.py
+  - lexcompact/adapters/jsonl.py
+  - lexcompact/adapters/kokoro_json.py
+  - lexcompact/adapters/tsv.py
+  - lexcompact/adapters/words.py
+  - lexcompact/asset.py
+  - lexcompact/asset_v4.py
+  - lexcompact/audit.py
+  - lexcompact/backends.py
+  - lexcompact/boundary_rules.py
+  - lexcompact/builder.py
+  - lexcompact/cli.py
+  - lexcompact/composer.py
+  - lexcompact/container.py
+  - lexcompact/diagnostics.py
+  - lexcompact/format_v5.py
+  - lexcompact/g2p.py
+  - lexcompact/graphone.py
+  - lexcompact/io.py
+  - lexcompact/key_index.py
+  - lexcompact/kokoro.py
+  - lexcompact/layers.py
+  - lexcompact/lexicon.py
+  - lexcompact/linkers.py
+  - lexcompact/literals.py
+  - lexcompact/membership.py
+  - lexcompact/model.py
+  - lexcompact/neural.py
+  - lexcompact/operations.py
+  - lexcompact/optimizer.py
+  - lexcompact/prefix_index.py
+  - lexcompact/reconstructors.py
+  - lexcompact/record_store.py
+  - lexcompact/reports.py
+  - lexcompact/resolver.py
+  - lexcompact/rules.py
+  - lexcompact/runtime.py
+  - lexcompact/segmentation.py
+  - lexcompact/selector.py
+  - lexcompact/selectors/__init__.py
+  - lexcompact/selectors/base.py
+  - lexcompact/selectors/forest.py
+  - lexcompact/selectors/gbdt.py
+  - lexcompact/selectors/logistic.py
+  - lexcompact/selectors/priority.py
+  - lexcompact/selectors/tree.py
+  - lexcompact/training/__init__.py
+  - lexcompact/training/alignment.py
+  - lexcompact/value.py
+  - lexcompact/verify.py
+  - lexcompact/verify_v5.py
+  - scripts/build_lexcompact_assets.py
+  - tests/test_core.py
+  - tests/test_io_cli.py
+  - tests/test_v4_contracts.py
+  - tests/test_v5.py
+issues: []
+prs: []
+sources:
+  - git:c3482cbf8211756f7bc2b92449c150b57d25e8fc
+contributors: []
+breaking: false
+internal: false
+order: 5
+---

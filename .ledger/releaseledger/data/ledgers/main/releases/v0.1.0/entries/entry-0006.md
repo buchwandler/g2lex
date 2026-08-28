@@ -1,0 +1,130 @@
+---
+schema_version: 2
+object_type: release_entry
+versioning:
+  schema_version: 1
+  revision: 1
+entry_id: entry-0006
+release_version: v0.1.0
+kind: changed
+summary:
+  Changed the public package and CLI name to g2lex, updating asset identities,
+  metadata, docs, scripts, and tests
+status: accepted
+audience: null
+scopes: []
+source_refs:
+  - git:3980ba72ffa96341f795a3e2e3a3cebda054cd38
+paths:
+  - .codecrate.toml
+  - .github/workflows/tests.yml
+  - .gitignore
+  - .ledger/ledger.toml
+  - AGENT_SPEC.md
+  - NOTICE
+  - README.md
+  - VALIDATION.md
+  - benchmarks/__init__.py
+  - benchmarks/de_lexicon_entry_reduction/README.md
+  - benchmarks/de_lexicon_entry_reduction/aggregate_results.py
+  - benchmarks/de_lexicon_entry_reduction/analyze_failures.py
+  - benchmarks/de_lexicon_entry_reduction/benchmark_memory.py
+  - benchmarks/de_lexicon_entry_reduction/config.py
+  - benchmarks/de_lexicon_entry_reduction/run.py
+  - benchmarks/de_lexicon_entry_reduction/run_config.py
+  - benchmarks/de_lexicon_entry_reduction/sources.py
+  - benchmarks/de_lexicon_entry_reduction/tests/test_entry_reduction.py
+  - benchmarks/de_lexicon_entry_reduction/verify.py
+  - benchmarks/lexicon_runtime/__init__.py
+  - benchmarks/lexicon_runtime/benchmark_kokorog2p_compat.py
+  - benchmarks/lexicon_runtime/benchmark_load.py
+  - benchmarks/lexicon_runtime/benchmark_lookup.py
+  - benchmarks/lexicon_runtime/benchmark_memory.py
+  - benchmarks/lexicon_runtime/benchmark_package_size.py
+  - benchmarks/runtime_storage/README.md
+  - benchmarks/runtime_storage/__init__.py
+  - benchmarks/runtime_storage/benchmark.py
+  - examples/kokorog2p_de_loader.py
+  - g2lex/__init__.py
+  - g2lex/_version.py
+  - g2lex/adapters/__init__.py
+  - g2lex/adapters/cmudict.py
+  - g2lex/adapters/common.py
+  - g2lex/adapters/gruut_sqlite.py
+  - g2lex/adapters/json_map.py
+  - g2lex/adapters/jsonl.py
+  - g2lex/adapters/kokoro_json.py
+  - g2lex/adapters/mfa.py
+  - g2lex/adapters/pls.py
+  - g2lex/adapters/tsv.py
+  - g2lex/adapters/words.py
+  - g2lex/asset.py
+  - g2lex/asset_v4.py
+  - g2lex/audit.py
+  - g2lex/backends.py
+  - g2lex/boundary_rules.py
+  - g2lex/builder.py
+  - g2lex/cli.py
+  - g2lex/composer.py
+  - g2lex/container.py
+  - g2lex/diagnostics.py
+  - g2lex/experimental/__init__.py
+  - g2lex/format.py
+  - g2lex/g2p.py
+  - g2lex/graphone.py
+  - g2lex/io.py
+  - g2lex/key_index.py
+  - g2lex/kokoro.py
+  - g2lex/layers.py
+  - g2lex/lexicon.py
+  - g2lex/linkers.py
+  - g2lex/literals.py
+  - g2lex/membership.py
+  - g2lex/model.py
+  - g2lex/neural.py
+  - g2lex/operations.py
+  - g2lex/optimizer.py
+  - g2lex/prefix_index.py
+  - g2lex/profiles/__init__.py
+  - g2lex/profiles/german.py
+  - g2lex/py.typed
+  - g2lex/reconstructors.py
+  - g2lex/record_store.py
+  - g2lex/reduce.py
+  - g2lex/reports.py
+  - g2lex/resolver.py
+  - g2lex/rules.py
+  - g2lex/runtime.py
+  - g2lex/segmentation.py
+  - g2lex/selector.py
+  - g2lex/selectors/__init__.py
+  - g2lex/selectors/base.py
+  - g2lex/selectors/forest.py
+  - g2lex/selectors/gbdt.py
+  - g2lex/selectors/logistic.py
+  - g2lex/selectors/priority.py
+  - g2lex/selectors/tree.py
+  - g2lex/training/__init__.py
+  - g2lex/training/alignment.py
+  - g2lex/value.py
+  - g2lex/verify.py
+  - g2lex/verify_exact.py
+  - lexcompact/__init__.py
+  - pyproject.toml
+  - scripts/build_g2lex_assets.py
+  - tests/fixtures/generic.tsv
+  - tests/test_adapters_external.py
+  - tests/test_core.py
+  - tests/test_format.py
+  - tests/test_integrity_runtime.py
+  - tests/test_io_cli.py
+  - tests/test_v4_contracts.py
+issues: []
+prs: []
+sources:
+  - git:3980ba72ffa96341f795a3e2e3a3cebda054cd38
+contributors: []
+breaking: false
+internal: false
+order: 6
+---
