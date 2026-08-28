@@ -34,10 +34,13 @@ def parse_typed_bytes(
 ):
     """Parse a named source format into ``TypedLexiconData``."""
     from .adapters import (
+        parse_cmudict_bytes,
         parse_extended_tsv_bytes,
         parse_json_map_bytes,
         parse_jsonl_bytes,
         parse_kokoro_json_bytes,
+        parse_mfa_bytes,
+        parse_pls_bytes,
         parse_tsv_bytes,
         parse_word_list_bytes,
     )
@@ -50,6 +53,12 @@ def parse_typed_bytes(
         return parse_json_map_bytes(data, path=path, source_id=source_id, allow_tagged=allow_tagged)
     if format == "jsonl":
         return parse_jsonl_bytes(data, path=path, source_id=source_id)
+    if format == "cmudict":
+        return parse_cmudict_bytes(data, path=path, source_id=source_id)
+    if format == "mfa":
+        return parse_mfa_bytes(data, path=path, source_id=source_id)
+    if format == "pls":
+        return parse_pls_bytes(data, path=path, source_id=source_id)
     if format == "tsv":
         return parse_tsv_bytes(data, path=path, source_id=source_id)
     if format == "lxc-tsv":
@@ -68,11 +77,25 @@ def read_typed_lexicon(
     allow_lists: bool = True,
 ):
     source_path = Path(path)
-    data = source_path.read_bytes()
     fmt = format
     if fmt == "auto":
         suffix = source_path.suffix.lower()
-        fmt = {".json": "kokoro-json", ".jsonl": "jsonl", ".txt": "words"}.get(suffix, "tsv")
+        fmt = {
+            ".json": "kokoro-json",
+            ".jsonl": "jsonl",
+            ".txt": "words",
+            ".dict": "cmudict",
+            ".mfa": "mfa",
+            ".pls": "pls",
+            ".xml": "pls",
+            ".sqlite": "gruut-sqlite",
+            ".db": "gruut-sqlite",
+        }.get(suffix, "tsv")
+    if fmt == "gruut-sqlite":
+        from .adapters import parse_gruut_sqlite
+
+        return parse_gruut_sqlite(source_path, source_id=source_id)
+    data = source_path.read_bytes()
     return parse_typed_bytes(
         data,
         format=fmt,

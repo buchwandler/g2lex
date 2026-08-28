@@ -3,13 +3,24 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "lexcompact"
-description = "Lossless resident-entry reduction for pronunciation lexicons"
+name = "g2lex"
+description = "Lossless, mmap-friendly compiled pronunciation lexicons for G2P, TTS, ASR, and speech tooling."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 authors = [{name = "Holger Nahrstaedt"}]
-keywords = ["lexicon", "phoneme", "pronunciation", "g2p", "compression", "tts"]
+keywords = [
+  "g2p",
+  "grapheme-to-phoneme",
+  "pronunciation",
+  "pronunciation-dictionary",
+  "lexicon",
+  "phoneme",
+  "tts",
+  "speech",
+  "asr",
+  "forced-alignment",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -30,22 +41,22 @@ dev = ["pytest>=8", "ruff>=0.12"]
 benchmark = ["tomli>=2; python_version < '3.11'"]
 
 [project.scripts]
-lexcompact = "lexcompact.cli:main"
+g2lex = "g2lex.cli:main"
 
 [project.urls]
-Repository = "https://github.com/buchwandler/lexcompact"
-Issues = "https://github.com/buchwandler/lexcompact/issues"
+Repository = "https://github.com/buchwandler/g2lex"
+Issues = "https://github.com/buchwandler/g2lex/issues"
 
 [tool.setuptools.dynamic]
-version = {attr = "lexcompact._version.__version__"}
+version = {attr = "g2lex._version.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["lexcompact*"]
+include = ["g2lex*"]
 exclude = ["tests*", "benchmarks*"]
 
 [tool.setuptools.package-data]
-lexcompact = ["py.typed"]
+g2lex = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "benchmarks/de_lexicon_entry_reduction/tests"]

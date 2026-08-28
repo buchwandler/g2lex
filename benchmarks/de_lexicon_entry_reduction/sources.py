@@ -13,12 +13,12 @@ try:
 except ModuleNotFoundError:  # Python 3.10
     import tomli as tomllib  # type: ignore[no-redef]
 
-from lexcompact.io import parse_json_bytes, parse_tsv_bytes
-from lexcompact.model import LexiconData, SourceInfo
+from g2lex.io import parse_json_bytes, parse_tsv_bytes
+from g2lex.model import LexiconData, SourceInfo
 
 ROOT = Path(__file__).resolve().parent
 MANIFEST_PATH = ROOT / "source_manifest.toml"
-DEFAULT_CACHE_DIR = Path.home() / ".cache" / "lexcompact" / "benchmarks" / "de-lexicons"
+DEFAULT_CACHE_DIR = Path.home() / ".cache" / "g2lex" / "benchmarks" / "de-lexicons"
 
 
 @dataclass(frozen=True, slots=True)

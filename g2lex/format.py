@@ -1,4 +1,4 @@
-"""Deterministic Lexcompact V5 container builder and reader."""
+"""Deterministic G2Lex v1 container builder and reader."""
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ from itertools import pairwise
 
 from .key_index import FrontCodedKeyIndex
 from .model import SourceInfo, TypedLexiconData
-from .record_store import compress_block, encode_record_block, encode_tags
+from .record_store import MAX_RECORD_BLOCK_BYTES, compress_block, encode_record_block, encode_tags
 from .value import LexiconValue, logical_sha256
 
-MAGIC = b"LXC5"
-SCHEMA = 5
+MAGIC = b"G2LX"
+SCHEMA = 1
 HEADER = struct.Struct(">4sIIIIQQ")
 TOC_PREFIX = struct.Struct(">I")
 TOC_ENTRY = struct.Struct(">QQQIB3x32s")
@@ -36,6 +36,12 @@ def _align(position: int, alignment: int = 8) -> int:
 
 def _source_dict(source: SourceInfo) -> dict[str, object]:
     value = asdict(source)
+    if value.get("source_sha256") is None:
+        value["source_sha256"] = value.get("sha256") or None
+    if value.get("source_size_bytes") is None:
+        value["source_size_bytes"] = value.get("size_bytes")
+    if value.get("source_format") is None:
+        value["source_format"] = value.get("format") or None
     if value.get("path"):
         value["path"] = str(value["path"])
     return value
@@ -66,7 +72,13 @@ def _read_directory(
     )
     previous = 0
     for stored_offset, stored_size, raw_size, record_count, _ in descriptors:
-        if stored_offset < previous or stored_size == 0 or raw_size == 0:
+        if (
+            stored_offset < previous
+            or stored_size == 0
+            or raw_size == 0
+            or stored_size > MAX_RECORD_BLOCK_BYTES
+            or raw_size > MAX_RECORD_BLOCK_BYTES
+        ):
             raise ValueError("invalid record directory descriptor")
         previous = stored_offset + stored_size
         if record_count == 0 or record_count > block_entries:
@@ -78,7 +90,7 @@ def _read_directory(
 
 def _build_container(sections: Mapping[str, bytes], *, flags: int = 0) -> bytes:
     if not sections:
-        raise ValueError("V5 container needs sections")
+        raise ValueError("G2Lex container needs sections")
     names = sorted(sections)
     output = bytearray(HEADER.size)
     descriptors = []
@@ -116,7 +128,7 @@ def pack_typed(
     compression: str = "zlib",
     compression_level: int = 9,
 ) -> bytes:
-    """Build a deterministic V5 file from typed logical entries."""
+    """Build a deterministic G2Lex file from typed logical entries."""
 
     if isinstance(data, TypedLexiconData):
         entries = data.entries
@@ -148,7 +160,7 @@ def pack_typed(
         )
     records_dir = _record_directory(descriptors, record_block_entries, len(ordered_words))
     manifest: dict[str, object] = {
-        "format": "lexcompact.lexicon.v5",
+        "format": "g2lex.lexicon.v1",
         "schema": SCHEMA,
         "entry_count": len(entries),
         "value_model": "typed-v1",
@@ -173,80 +185,80 @@ def pack_typed(
     return _build_container(sections)
 
 
-class V5Container:
-    """Validated read-only view of a V5 container."""
+class BinaryLexiconContainer:
+    """Validated read-only view of a G2Lex container."""
 
     def __init__(self, data: bytes | bytearray | memoryview):
         self._view = memoryview(data)
         if len(self._view) < HEADER.size:
-            raise ValueError("truncated V5 header")
+            raise ValueError("truncated G2Lex header")
         magic, schema, count, _flags, _reserved, toc_offset, file_size = HEADER.unpack_from(
             self._view
         )
         if magic != MAGIC:
-            raise ValueError("invalid V5 magic")
+            raise ValueError("invalid G2Lex magic")
         if schema != SCHEMA:
-            raise ValueError(f"unsupported V5 schema: {schema}")
+            raise ValueError(f"unsupported G2Lex schema: {schema}")
         if (
             file_size != len(self._view)
             or toc_offset < HEADER.size
             or toc_offset + 4 > len(self._view)
         ):
-            raise ValueError("invalid V5 file size or TOC offset")
+            raise ValueError("invalid G2Lex file size or TOC offset")
         toc_count = TOC_PREFIX.unpack_from(self._view, toc_offset)[0]
         if toc_count != count:
-            raise ValueError("V5 section count mismatch")
+            raise ValueError("G2Lex section count mismatch")
         position = toc_offset + TOC_PREFIX.size
         sections: dict[str, tuple[int, int, int, int, bytes]] = {}
         for _ in range(count):
             if position + 2 > len(self._view):
-                raise ValueError("truncated V5 TOC")
+                raise ValueError("truncated G2Lex v1 TOC")
             name_length = struct.unpack_from(">H", self._view, position)[0]
             position += 2
             end_name = position + name_length
             if end_name + TOC_ENTRY.size > len(self._view):
-                raise ValueError("truncated V5 TOC entry")
+                raise ValueError("truncated G2Lex v1 TOC entry")
             try:
                 name = bytes(self._view[position:end_name]).decode("utf-8")
             except UnicodeDecodeError as exc:
-                raise ValueError("invalid V5 section name") from exc
+                raise ValueError("invalid G2Lex section name") from exc
             position = end_name
             offset, stored_size, raw_size, alignment, codec, digest = TOC_ENTRY.unpack_from(
                 self._view, position
             )
             position += TOC_ENTRY.size
             if not name or name in sections or codec != 0 or alignment == 0:
-                raise ValueError("invalid V5 section descriptor")
+                raise ValueError("invalid G2Lex section descriptor")
             if offset < HEADER.size or offset + stored_size > toc_offset or offset % alignment:
-                raise ValueError("V5 section lies outside payload or is misaligned")
+                raise ValueError("G2Lex section lies outside payload or is misaligned")
             payload = self._view[offset : offset + stored_size]
             if raw_size != stored_size or hashlib.sha256(payload).digest() != digest:
-                raise ValueError(f"V5 section hash/size mismatch: {name}")
+                raise ValueError(f"G2Lex section hash/size mismatch: {name}")
             sections[name] = (offset, stored_size, raw_size, alignment, digest)
         ranges = sorted((value[0], value[0] + value[1]) for value in sections.values())
         if any(left < right for (_, right), (left, _) in pairwise(ranges)):
-            raise ValueError("overlapping V5 sections")
+            raise ValueError("overlapping G2Lex sections")
         if position > len(self._view):
-            raise ValueError("truncated V5 TOC")
+            raise ValueError("truncated G2Lex v1 TOC")
         self._sections = sections
         self.manifest = self._read_manifest()
-        if self.manifest.get("format") != "lexcompact.lexicon.v5":
-            raise ValueError("invalid V5 manifest format")
+        if self.manifest.get("format") != "g2lex.lexicon.v1":
+            raise ValueError("invalid G2Lex manifest format")
         if int(self.manifest.get("schema", -1)) != SCHEMA:
-            raise ValueError("V5 manifest schema mismatch")
+            raise ValueError("G2Lex manifest schema mismatch")
         required = {"manifest.json", "keys.fci", "records.blocks", "records.dir", "tags.bin"}
         if not required.issubset(self._sections):
-            raise ValueError("V5 container is missing required sections")
+            raise ValueError("G2Lex container is missing required sections")
         self.key_index = FrontCodedKeyIndex(self.section_view("keys.fci"))
         from .record_store import decode_tags
 
         self.tags = decode_tags(self.section_view("tags.bin"))
         block_entries, count, descriptors = _read_directory(self.section_view("records.dir"))
         if count != len(self.key_index) or count != int(self.manifest.get("entry_count", -1)):
-            raise ValueError("V5 logical count mismatch")
+            raise ValueError("G2Lex logical count mismatch")
         codec = str(self.manifest.get("record_codec", ""))
         if codec not in {"none-block-v1", "zlib-block-v1"}:
-            raise ValueError("unsupported V5 record codec")
+            raise ValueError("unsupported G2Lex v1 record codec")
         records_size = len(self.section_view("records.blocks"))
         for offset, stored_size, _raw_size, _record_count, _crc in descriptors:
             if offset + stored_size > records_size:
@@ -257,13 +269,13 @@ class V5Container:
 
     def _read_manifest(self) -> dict[str, object]:
         if "manifest.json" not in self._sections:
-            raise ValueError("V5 container is missing manifest.json")
+            raise ValueError("G2Lex container is missing manifest.json")
         try:
             value = json.loads(bytes(self.section_view("manifest.json")))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ValueError("invalid V5 manifest") from exc
+            raise ValueError("invalid G2Lex manifest") from exc
         if not isinstance(value, dict):
-            raise TypeError("V5 manifest must be an object")
+            raise TypeError("G2Lex manifest must be an object")
         return value
 
     def section_view(self, name: str) -> memoryview:
@@ -286,5 +298,5 @@ class V5Container:
         return len(self._sections)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> V5Container:
+    def from_bytes(cls, data: bytes) -> BinaryLexiconContainer:
         return cls(data)

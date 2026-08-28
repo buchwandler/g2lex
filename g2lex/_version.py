@@ -7,14 +7,14 @@ import re
 import subprocess
 from pathlib import Path
 
-_FALLBACK = "0.3.0.dev0"
+_FALLBACK = "0.1.0"
 _TAG = re.compile(
     r"^v?(?P<base>\d+\.\d+\.\d+)(?:-(?P<count>\d+)-g(?P<sha>[0-9a-f]+))?(?P<dirty>-dirty)?$"
 )
 
 
 def get_version() -> str:
-    override = os.environ.get("LEXCOMPACT_VERSION")
+    override = os.environ.get("G2LEX_VERSION")
     if override:
         return override
     root = Path(__file__).resolve().parents[1]

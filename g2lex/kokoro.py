@@ -26,7 +26,7 @@ _CACHE_MISSES = 0
 
 
 def open_kokoro_lexicon(resource: Any, *, aliases: bool = False, cache_key: object = None):
-    """Open one packaged or filesystem V5 lexicon, optionally with aliases."""
+    """Open one packaged or filesystem G2Lex v1 lexicon, optionally with aliases."""
 
     global _CACHE_HITS, _CACHE_MISSES
     key = cache_key if cache_key is not None else resource

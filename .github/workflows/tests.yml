@@ -22,9 +22,9 @@ jobs:
         run: python -m pytest
       - name: CLI smoke
         run: |
-          lexcompact --version
-          lexcompact reduce benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/toy.lxc --format tsv --profile de-linkers
-          lexcompact verify benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/toy.lxc --format tsv
+          g2lex --version
+          g2lex pack benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/toy.g2lex --format tsv
+          g2lex verify benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/toy.g2lex --format tsv
 
   package:
     runs-on: ubuntu-latest
@@ -36,4 +36,4 @@ jobs:
       - run: python -m pip install --upgrade build
       - run: python -m build
       - run: python -m pip install dist/*.whl
-      - run: lexcompact --version
+      - run: g2lex --version

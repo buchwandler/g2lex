@@ -1,4 +1,4 @@
-"""Report source and V5 package sizes."""
+"""Report source and G2Lex v1 package sizes."""
 
 from __future__ import annotations
 
@@ -14,7 +14,16 @@ def main() -> int:
     args = parser.parse_args()
     source_size = args.source.stat().st_size
     asset_size = args.asset.stat().st_size
-    print(json.dumps({"source_bytes": source_size, "asset_bytes": asset_size, "ratio": asset_size / source_size}, indent=2))
+    print(
+        json.dumps(
+            {
+                "source_bytes": source_size,
+                "asset_bytes": asset_size,
+                "ratio": asset_size / source_size,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

@@ -1,4 +1,4 @@
-"""Mmap-friendly front-coded UTF-8 key index for Lexcompact V5."""
+"""Mmap-friendly front-coded UTF-8 key index for G2Lex v1."""
 
 from __future__ import annotations
 

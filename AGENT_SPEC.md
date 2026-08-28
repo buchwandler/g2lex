@@ -1,4 +1,4 @@
-# Coding-agent specification: extract KokoroG2P lexicon entry reduction into `lexcompact`
+# Coding-agent specification: extract KokoroG2P lexicon entry reduction into `g2lex`
 
 ## 1. Objective
 
@@ -17,7 +17,7 @@ The central requirement is **lossless logical entry-number reduction**:
 This repository intentionally uses a flat package layout:
 
 ```text
-lexcompact/
+g2lex/
 benchmarks/
 tests/
 pyproject.toml
@@ -322,7 +322,7 @@ The ZIP writer fixes member timestamps and sorting so repeated serializations ar
 
 `manifest.json` contains aggregate counts/provenance/config. `composer.json` contains bounded shared composer configuration and aggregate metadata, including V3's `recursive_components`, `max_recursive_depth`, and optional serialized `SegmentationScorer`. Neither may contain per-generated-word information.
 
-The standalone V3 container identifies itself as `lexcompact.asset.v3` / schema 3. The loader may accept V2 assets by defaulting the new fields to
+The standalone V3 container identifies itself as `g2lex.asset.v3` / schema 3. The loader may accept V2 assets by defaulting the new fields to
 non-recursive/no-scorer behavior.
 
 The runtime loader must never open the original source lexicon.
@@ -331,13 +331,13 @@ The runtime loader must never open the original source lexicon.
 
 ## 9. CLI contract
 
-The installed console script is `lexcompact`.
+The installed console script is `g2lex`.
 
 ### Generic reduction
 
 ```bash
-lexcompact reduce original.json reduced.lxc
-lexcompact reduce original.tsv reduced.lxc --format tsv
+g2lex reduce original.json reduced.lxc
+g2lex reduce original.tsv reduced.lxc --format tsv
 ```
 
 Default behavior must be language-neutral exact concatenation.
@@ -345,9 +345,9 @@ Default behavior must be language-neutral exact concatenation.
 ### Optional German research profiles
 
 ```bash
-lexcompact reduce de.json de.lxc --profile de-compound
-lexcompact reduce de.json de.lxc --profile de-boundary
-lexcompact reduce de.json de.lxc --profile de-linkers
+g2lex reduce de.json de.lxc --profile de-compound
+g2lex reduce de.json de.lxc --profile de-boundary
+g2lex reduce de.json de.lxc --profile de-linkers
 ```
 
 These flags are explicit and should be described as reproducing experimental shared rules, not universally correct German morphology.
@@ -355,7 +355,7 @@ These flags are explicit and should be described as reproducing experimental sha
 V3 composition controls are language-neutral and may be combined with any profile:
 
 ```bash
-lexcompact reduce lexicon.tsv lexicon.lxc --format tsv \
+g2lex reduce lexicon.tsv lexicon.lxc --format tsv \
   --recursive-components \
   --max-recursive-depth 4 \
   --segmentation-scorer v2
@@ -364,7 +364,7 @@ lexcompact reduce lexicon.tsv lexicon.lxc --format tsv \
 ### Independent verification
 
 ```bash
-lexcompact verify original.json reduced.lxc
+g2lex verify original.json reduced.lxc
 ```
 
 Exit nonzero on any mismatch.
@@ -372,9 +372,9 @@ Exit nonzero on any mismatch.
 ### Runtime diagnostics
 
 ```bash
-lexcompact lookup reduced.lxc WORD
-lexcompact inspect reduced.lxc
-lexcompact restore reduced.lxc restored.json --format json
+g2lex lookup reduced.lxc WORD
+g2lex inspect reduced.lxc
+g2lex restore reduced.lxc restored.json --format json
 ```
 
 `restore` materializes the complete logical lexicon and is an important audit feature.
@@ -426,7 +426,7 @@ The inspected new KokoroG2P German loader is in `kokorog2p/de/lexicon.py`. `_loa
 Suggested KokoroG2P migration:
 
 ```python
-from lexcompact import load_traversable
+from g2lex import load_traversable
 
 @lru_cache(maxsize=1)
 def _load_gold_dictionary(load_gold: bool = True) -> Mapping[str, str]:
@@ -584,11 +584,11 @@ Never silently skip the full test when a release is about to replace KokoroG2P's
 
 No `src/` layout.
 
-`pyproject.toml` discovers `lexcompact*` from the repository root and excludes `benchmarks*` and `tests*` from the installed wheel.
+`pyproject.toml` discovers `g2lex*` from the repository root and excludes `benchmarks*` and `tests*` from the installed wheel.
 
 Versioning is dynamic:
 
-- `LEXCOMPACT_VERSION` environment variable wins for explicit reproducible builds;
+- `G2LEX_VERSION` environment variable wins for explicit reproducible builds;
 - otherwise derive from Git `vX.Y.Z` tags;
 - exact tag => `X.Y.Z`;
 - commits after tag => PEP-440 post/local version;
@@ -596,7 +596,7 @@ Versioning is dynamic:
 
 Do not hard-code a release version in `pyproject.toml`.
 
-The wheel must contain `lexcompact/py.typed`.
+The wheel must contain `g2lex/py.typed`.
 
 ---
 

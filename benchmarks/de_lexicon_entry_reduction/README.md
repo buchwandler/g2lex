@@ -1,6 +1,6 @@
 # German lexicon entry-reduction reproduction
 
-This directory reproduces the later KokoroG2P `experiments/de_lexicon_entry_reduction` research harness around the standalone `lexcompact` package.
+This directory reproduces the later KokoroG2P `experiments/de_lexicon_entry_reduction` research harness around the standalone `g2lex` package.
 
 The runtime contract is the same: generated words are never represented by a runtime word→recipe map. Exact membership is a compact DAFSA, and reconstruction is spelling-only from literals plus shared rules/indexes.
 
@@ -18,15 +18,15 @@ python -m benchmarks.de_lexicon_entry_reduction.run \
   --linkers german \
   --recursive-components \
   --segmentation-scorer v2 \
-  --output /tmp/lexcompact-entry-reduction
+  --output /tmp/g2lex-entry-reduction
 
 python -m benchmarks.de_lexicon_entry_reduction.verify \
   --source toy \
-  --run /tmp/lexcompact-entry-reduction
+  --run /tmp/g2lex-entry-reduction
 
 python -m benchmarks.de_lexicon_entry_reduction.benchmark_memory \
   --source toy \
-  --run /tmp/lexcompact-entry-reduction
+  --run /tmp/g2lex-entry-reduction
 ```
 
 ## Pinned external sources
@@ -51,7 +51,7 @@ The first-class Crane benchmark consumes the raw German Wiktionary TSV from the 
 - SHA-256: `04a3909f07cd08615157393814188b420a7c3c5035cf7a0608d31be07892be29`
 - license: `CC-BY-SA-4.0`
 
-The upstream dataset card describes approximately 900k physical rows, but that is metadata rather than the measured baseline. Lexcompact reports the exact physical row count, the logical spelling count after its TSV view, ordered pronunciation variants, and duplicate-identical rows removed. Repeated spellings remain ordered variants and are not normalized, lowercased, or casefolded. The primary reduction rate is calculated from logical spellings, not physical rows. The `<=400,000` target is a cross-corpus stretch target and is not directly comparable with the built-in KokoroG2P 738,427-word source.
+The upstream dataset card describes approximately 900k physical rows, but that is metadata rather than the measured baseline. G2Lex reports the exact physical row count, the logical spelling count after its TSV view, ordered pronunciation variants, and duplicate-identical rows removed. Repeated spellings remain ordered variants and are not normalized, lowercased, or casefolded. The primary reduction rate is calculated from logical spellings, not physical rows. The `<=400,000` target is a cross-corpus stretch target and is not directly comparable with the built-in KokoroG2P 738,427-word source.
 
 Downloading is explicit and the raw pinned file is used directly. Do not use the Hugging Face dataset viewer, whose current multi-file schema issue is unrelated to this raw-file benchmark.
 

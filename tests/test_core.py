@@ -1,9 +1,10 @@
 from pathlib import Path
 
-from lexcompact import LexiconData, ReductionConfig, SegmentationScorer, reduce_lexicon
-from lexcompact.asset import dumps, load, loads, save
-from lexcompact.profiles.german import german_rules
-from lexcompact.verify import verify_candidate
+from g2lex.asset import dumps, load, loads, save
+from g2lex.experimental import ReductionConfig, SegmentationScorer, reduce_lexicon
+from g2lex.model import LexiconData
+from g2lex.profiles.german import german_rules
+from g2lex.verify import verify_candidate
 
 
 def test_generic_exact_concat_and_oov_gate():

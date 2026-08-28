@@ -9,4 +9,4 @@ dist/
 .venv/
 benchmarks/**/data/
 benchmarks/**/runs/
-context_lexcompact*.*
+context_g2lex*.*

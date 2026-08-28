@@ -1,4 +1,4 @@
-"""Typed record encoding and independently compressed V5 record blocks."""
+"""Typed record encoding and independently compressed G2Lex v1 record blocks."""
 
 from __future__ import annotations
 
@@ -14,6 +14,9 @@ NULL_TYPE = 1
 STRING_TYPE = 2
 STRING_LIST_TYPE = 3
 TAG_MAP_TYPE = 4
+
+
+MAX_RECORD_BLOCK_BYTES = 64 * 1024 * 1024
 
 
 def encode_varint(value: int) -> bytes:
@@ -33,6 +36,8 @@ def decode_varint(data: memoryview, position: int, end: int) -> tuple[int, int]:
     while position < end and shift <= 63:
         byte = data[position]
         position += 1
+        if shift == 63 and byte > 1:
+            raise ValueError("invalid or truncated record varint")
         value |= (byte & 0x7F) << shift
         if not byte & 0x80:
             return value, position
@@ -198,11 +203,16 @@ def compress_block(raw: bytes, codec: str = "zlib", level: int = 9) -> bytes:
 
 
 def decompress_block(stored: bytes | memoryview, codec: str, raw_size: int) -> bytes:
+    if raw_size < 0 or raw_size > MAX_RECORD_BLOCK_BYTES:
+        raise ValueError("record block raw size exceeds safety limit")
     if codec == "none":
         raw = bytes(stored)
     elif codec == "zlib":
         try:
-            raw = zlib.decompress(stored)
+            decompressor = zlib.decompressobj()
+            raw = decompressor.decompress(stored, raw_size + 1)
+            if not decompressor.eof or decompressor.unconsumed_tail or decompressor.unused_data:
+                raise ValueError("invalid compressed record block")
         except zlib.error as exc:
             raise ValueError("invalid compressed record block") from exc
     else:

@@ -10,19 +10,19 @@ import time
 from pathlib import Path
 from typing import Any
 
-from lexcompact.asset import load, runtime_asset_bytes, save
-from lexcompact.asset_v4 import save as save_v4
-from lexcompact.audit import audit_runtime_representation
-from lexcompact.backends import build_literal_store, build_membership_backend
-from lexcompact.builder import build_implicit_lexicon
-from lexcompact.optimizer import optimize_basis
-from lexcompact.profiles.german import german_linker_table, german_rules
-from lexcompact.reports import report_markdown, summary_dict
-from lexcompact.rules import default_rules
-from lexcompact.runtime import ComposerReconstructor, RuntimeProgram
-from lexcompact.segmentation import SegmentationScorer
-from lexcompact.selectors import StaticPrioritySelector
-from lexcompact.verify import verify_candidate
+from g2lex.asset import load, runtime_asset_bytes, save
+from g2lex.asset_v4 import save as save_v4
+from g2lex.audit import audit_runtime_representation
+from g2lex.backends import build_literal_store, build_membership_backend
+from g2lex.builder import build_implicit_lexicon
+from g2lex.optimizer import optimize_basis
+from g2lex.profiles.german import german_linker_table, german_rules
+from g2lex.reports import report_markdown, summary_dict
+from g2lex.rules import default_rules
+from g2lex.runtime import ComposerReconstructor, RuntimeProgram
+from g2lex.segmentation import SegmentationScorer
+from g2lex.selectors import StaticPrioritySelector
+from g2lex.verify import verify_candidate
 
 from .sources import load_source
 

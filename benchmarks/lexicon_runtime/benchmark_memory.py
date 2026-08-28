@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from lexcompact import open_lexicon
+from g2lex import open
 
 
 def main() -> int:
@@ -15,13 +15,24 @@ def main() -> int:
     parser.add_argument("asset", type=Path)
     args = parser.parse_args()
     before = sys.getallocatedblocks() if hasattr(sys, "getallocatedblocks") else None
-    lexicon = open_lexicon(args.asset)
+    lexicon = open(args.asset)
     after_open = sys.getallocatedblocks() if before is not None else None
     try:
         for word in lexicon:
             lexicon.get(word)
         after_iteration = sys.getallocatedblocks() if before is not None else None
-        print(json.dumps({"entries": len(lexicon), "allocated_blocks_open_delta": None if before is None else after_open - before, "allocated_blocks_iteration_delta": None if after_open is None else after_iteration - after_open}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "entries": len(lexicon),
+                    "allocated_blocks_open_delta": None if before is None else after_open - before,
+                    "allocated_blocks_iteration_delta": None
+                    if after_open is None
+                    else after_iteration - after_open,
+                },
+                indent=2,
+            )
+        )
     finally:
         lexicon.close()
     return 0

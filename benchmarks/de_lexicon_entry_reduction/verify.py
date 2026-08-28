@@ -7,8 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
-from lexcompact.asset import load
-from lexcompact.verify import verify_candidate
+from g2lex.asset import load
+from g2lex.verify import verify_candidate
 
 from .sources import load_source
 

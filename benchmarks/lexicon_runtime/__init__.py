@@ -1,1 +1,1 @@
-"""Small runtime benchmark helpers for exact V5 lexicons."""
+"""Small runtime benchmark helpers for exact G2Lex v1 lexicons."""

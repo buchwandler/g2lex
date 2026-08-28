@@ -1,4 +1,4 @@
-"""Verification and comparison of exact typed V5 lexicons."""
+"""Verification and comparison of exact typed G2Lex v1 lexicons."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Typed, source-neutral lexicon values used by the V5 format."""
+"""Typed, source-neutral lexicon values used by the G2Lex v1 format."""
 
 from __future__ import annotations
 
@@ -155,7 +155,7 @@ def _canonical_value(buffer: bytearray, value: LexiconValue) -> None:
 def canonical_bytes(entries: Mapping[str, LexiconValue]) -> bytes:
     """Return an unambiguous deterministic representation of logical entries."""
 
-    output = bytearray(b"LXC5-LOGICAL-1")
+    output = bytearray(b"G2LX-LOGICAL-1")
     for word in sorted(entries):
         if not isinstance(word, str):
             raise TypeError("lexicon keys must be strings")

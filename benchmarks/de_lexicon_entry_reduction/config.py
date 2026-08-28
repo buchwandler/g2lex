@@ -14,7 +14,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     import tomli as tomllib
 
-from lexcompact.backends import CODECS, LITERAL_BACKENDS, MEMBERSHIP_BACKENDS
+from g2lex.backends import CODECS, LITERAL_BACKENDS, MEMBERSHIP_BACKENDS
 
 SCHEMA_VERSION = 1
 DEFAULTS: dict[str, Any] = {

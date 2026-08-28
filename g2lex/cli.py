@@ -1,4 +1,4 @@
-"""Command-line interface for lexcompact."""
+"""Command-line interface for g2lex."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from .rules import default_rules
 from .segmentation import SegmentationScorer
 from .value import WORD_ONLY, TaggedValue, as_plain_selector
 from .verify import verify_candidate
-from .verify_v5 import compare
+from .verify_exact import compare
 
 try:
     from ._version import __version__
@@ -72,10 +72,24 @@ def _cmd_pack(args: argparse.Namespace) -> int:
         key: value
         for key, value in {
             "source_id": args.source_id,
+            "display_name": args.display_name,
             "language": args.language,
             "locale": args.locale,
+            "dialect": args.dialect,
             "tier": args.tier,
             "provider": args.provider,
+            "revision": args.revision,
+            "source_url": args.source_url,
+            "pronunciation_alphabet": args.pronunciation_alphabet,
+            "pronunciation_separator": args.pronunciation_separator,
+            "role_namespace": args.role_namespace,
+            "license_expression": args.license_expression,
+            "license_name": args.license_name,
+            "license_url": args.license_url,
+            "attribution": args.attribution,
+            "generator": args.generator,
+            "parser_id": args.parser_id,
+            "parser_version": args.parser_version,
         }.items()
         if value is not None
     }
@@ -99,13 +113,24 @@ def _cmd_pack(args: argparse.Namespace) -> int:
 
 
 def _cmd_verify(args: argparse.Namespace) -> int:
-    source = read_lexicon(
-        args.source, format=args.format if args.format in {"json", "tsv", "auto"} else "auto"
-    )
-    if args.asset.read_bytes()[:4] != b"LXC5":
-        result = verify_candidate(load(args.asset), source)
-    else:
-        result = verify_file(args.source, args.asset, input_format=args.format)
+    if args.asset.read_bytes()[:4] != b"G2LX":
+        raise ValueError(
+            "verify accepts G2Lex v1 assets; use 'experimental verify-reduced' for reduction assets"
+        )
+    result = verify_file(args.source, args.asset, input_format=args.format)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0 if result["lossless"] else 1
+
+
+def _cmd_verify_reduced(args: argparse.Namespace) -> int:
+    source = read_lexicon(args.source, format=args.format)
+    candidate = load(args.asset)
+    try:
+        result = verify_candidate(candidate, source)
+    finally:
+        close = getattr(candidate, "close", None)
+        if close is not None:
+            close()
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["lossless"] else 1
 
@@ -124,7 +149,7 @@ def _plain_lookup(value):
 
 
 def _cmd_lookup(args: argparse.Namespace) -> int:
-    if args.asset.read_bytes()[:4] != b"LXC5":
+    if args.asset.read_bytes()[:4] != b"G2LX":
         candidate = load(args.asset)
         values = candidate.lookup_all(args.word)
         if not values:
@@ -144,7 +169,7 @@ def _cmd_lookup(args: argparse.Namespace) -> int:
 
 
 def _cmd_inspect(args: argparse.Namespace) -> int:
-    if args.asset.read_bytes()[:4] == b"LXC5":
+    if args.asset.read_bytes()[:4] == b"G2LX":
         print(json.dumps(inspect_file(args.asset), ensure_ascii=False, indent=2))
         return 0
     candidate = load(args.asset)
@@ -197,7 +222,7 @@ def _cmd_diff(args: argparse.Namespace) -> int:
 
 
 def _cmd_restore(args: argparse.Namespace) -> int:
-    if args.asset.read_bytes()[:4] == b"LXC5":
+    if args.asset.read_bytes()[:4] == b"G2LX":
         export_file(args.asset, args.output, format=args.format)
         return 0
     candidate = load(args.asset)
@@ -216,24 +241,50 @@ _MISSING = object()
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="lexcompact", description="Lossless typed lexicon conversion and reduction."
+        prog="g2lex", description="Lossless typed lexicon conversion and reduction."
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    pack = sub.add_parser("pack", help="build a deterministic exact V5 lexicon")
+    pack = sub.add_parser("pack", help="build a deterministic exact G2Lex v1 lexicon")
     pack.add_argument("source", type=Path)
     pack.add_argument("output", type=Path)
     pack.add_argument(
         "--format",
         default="auto",
-        choices=("auto", "kokoro-json", "json-map", "tsv", "lxc-tsv", "jsonl", "words"),
+        choices=(
+            "auto",
+            "kokoro-json",
+            "json-map",
+            "tsv",
+            "lxc-tsv",
+            "jsonl",
+            "words",
+            "cmudict",
+            "mfa",
+            "pls",
+            "gruut-sqlite",
+        ),
     )
     pack.add_argument("--source-id")
     pack.add_argument("--language")
     pack.add_argument("--locale")
     pack.add_argument("--tier")
     pack.add_argument("--provider")
+    pack.add_argument("--display-name")
+    pack.add_argument("--dialect")
+    pack.add_argument("--revision")
+    pack.add_argument("--source-url")
+    pack.add_argument("--pronunciation-alphabet")
+    pack.add_argument("--pronunciation-separator")
+    pack.add_argument("--role-namespace")
+    pack.add_argument("--license-expression")
+    pack.add_argument("--license-name")
+    pack.add_argument("--license-url")
+    pack.add_argument("--attribution")
+    pack.add_argument("--generator")
+    pack.add_argument("--parser-id")
+    pack.add_argument("--parser-version")
     pack.add_argument("--record-block-entries", type=int, default=256)
     pack.add_argument("--key-block-entries", type=int, default=32)
     pack.add_argument("--compression", choices=("zlib", "none"), default="zlib")
@@ -241,17 +292,29 @@ def build_parser() -> argparse.ArgumentParser:
     pack.add_argument("--report", type=Path)
     pack.set_defaults(func=_cmd_pack)
 
-    verify_p = sub.add_parser("verify", help="compare a V5 asset with its source")
+    verify_p = sub.add_parser("verify", help="compare a G2Lex v1 asset with its source")
     verify_p.add_argument("source", type=Path)
     verify_p.add_argument("asset", type=Path)
     verify_p.add_argument(
         "--format",
         default="auto",
-        choices=("auto", "kokoro-json", "json-map", "tsv", "lxc-tsv", "jsonl", "words"),
+        choices=(
+            "auto",
+            "kokoro-json",
+            "json-map",
+            "tsv",
+            "lxc-tsv",
+            "jsonl",
+            "words",
+            "cmudict",
+            "mfa",
+            "pls",
+            "gruut-sqlite",
+        ),
     )
     verify_p.set_defaults(func=_cmd_verify)
 
-    export_p = sub.add_parser("export", help="export a V5 asset")
+    export_p = sub.add_parser("export", help="export a G2Lex v1 asset")
     export_p.add_argument("asset", type=Path)
     export_p.add_argument("output", type=Path)
     export_p.add_argument(
@@ -268,7 +331,18 @@ def build_parser() -> argparse.ArgumentParser:
     convert_p.add_argument(
         "--input-format",
         default="auto",
-        choices=("auto", "json", "tsv", "lxc-tsv", "jsonl", "words"),
+        choices=(
+            "auto",
+            "json",
+            "tsv",
+            "lxc-tsv",
+            "jsonl",
+            "words",
+            "cmudict",
+            "mfa",
+            "pls",
+            "gruut-sqlite",
+        ),
     )
     convert_p.add_argument(
         "--format", default="auto", choices=("auto", "json", "tsv", "lxc-tsv", "jsonl", "words")
@@ -276,7 +350,7 @@ def build_parser() -> argparse.ArgumentParser:
     convert_p.add_argument("--allow-lossy", action="store_true")
     convert_p.set_defaults(func=_cmd_convert)
 
-    lookup_p = sub.add_parser("lookup", help="look up one V5 spelling")
+    lookup_p = sub.add_parser("lookup", help="look up one G2Lex v1 spelling")
     lookup_p.add_argument("asset", type=Path)
     lookup_p.add_argument("word")
     lookup_p.set_defaults(func=_cmd_lookup)
@@ -292,7 +366,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--format", default="auto", choices=("auto", "json", "tsv", "lxc-tsv", "jsonl", "words")
     )
     restore_p.set_defaults(func=_cmd_restore)
-    diff_p = sub.add_parser("diff", help="compare two V5 assets")
+    diff_p = sub.add_parser("diff", help="compare two G2Lex v1 assets")
     diff_p.add_argument("left", type=Path)
     diff_p.add_argument("right", type=Path)
     diff_p.set_defaults(func=_cmd_diff)
@@ -316,6 +390,16 @@ def build_parser() -> argparse.ArgumentParser:
     reduce_p.add_argument("--segmentation-scorer", choices=("v1", "v2"), default="v1")
     reduce_p.add_argument("--report", type=Path)
     reduce_p.set_defaults(func=_cmd_reduce)
+
+    experimental = sub.add_parser("experimental", help="experimental reduction tools")
+    experimental_sub = experimental.add_subparsers(dest="experimental_command", required=True)
+    verify_reduced = experimental_sub.add_parser(
+        "verify-reduced", help="verify an experimental reduction asset against its source"
+    )
+    verify_reduced.add_argument("source", type=Path)
+    verify_reduced.add_argument("asset", type=Path)
+    verify_reduced.add_argument("--format", choices=("auto", "json", "tsv"), default="auto")
+    verify_reduced.set_defaults(func=_cmd_verify_reduced)
     return parser
 
 

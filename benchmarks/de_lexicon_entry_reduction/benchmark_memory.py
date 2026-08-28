@@ -74,7 +74,7 @@ def _worker(kind: str, run: Path, source: str, data_root: Path | None, path: Pat
     faults_before = _faults()
     started = time.perf_counter()
     if kind == "candidate":
-        from lexcompact.asset import load
+        from g2lex.asset import load
 
         candidate = load(run / "candidate.lxc")
         count = candidate.membership.word_count
@@ -132,8 +132,8 @@ def _percentile(values: list[float], percentile: int) -> float:
 
 
 def _lookup_metrics(run: Path, sample_size: int, seed: int) -> dict[str, object]:
-    from lexcompact.asset import load
-    from lexcompact.verify import adversarial_misses
+    from g2lex.asset import load
+    from g2lex.verify import adversarial_misses
 
     candidate = load(run / "candidate.lxc")
     all_words = tuple(candidate.membership.iter_words())

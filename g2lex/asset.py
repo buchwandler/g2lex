@@ -98,7 +98,7 @@ def save(path: str | Path, asset: ImplicitLexicon) -> None:
 
 
 def loads(data: bytes) -> ImplicitLexicon:
-    if data[:4] == b"LXC5":
+    if data[:4] == b"G2LX":
         from .lexicon import open_bytes
 
         return open_bytes(data)  # type: ignore[return-value]
@@ -162,7 +162,7 @@ def load(path: str | Path) -> ImplicitLexicon:
     path = Path(path)
     with path.open("rb") as handle:
         magic = handle.read(4)
-        if magic == b"LXC5":
+        if magic == b"G2LX":
             from .lexicon import open_lexicon
 
             return open_lexicon(path)  # type: ignore[return-value]
@@ -176,7 +176,7 @@ def load(path: str | Path) -> ImplicitLexicon:
 def load_traversable(resource: Any) -> ImplicitLexicon:
     """Load from an importlib.resources Traversable or any object with read_bytes()."""
     data = resource.read_bytes()
-    if data[:4] == b"LXC5":
+    if data[:4] == b"G2LX":
         from .lexicon import open_traversable
 
         return open_traversable(resource)  # type: ignore[return-value]

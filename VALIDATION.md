@@ -1,4 +1,4 @@
-# Validation record — Lexcompact V3 MVP
+# Validation record — G2Lex V3 MVP
 
 Date: 2026-08-28
 
@@ -25,7 +25,7 @@ The implementation basis inspected was:
 experiments/de_lexicon_entry_reduction/
 ```
 
-The newest material changes relevant to Lexcompact V3 are:
+The newest material changes relevant to G2Lex V3 are:
 
 - `lexreduce/resolver.py`: ephemeral recursive constituent resolution;
 - `lexreduce/segmentation.py`: compact deterministic integer `SegmentationScorer`;
@@ -80,7 +80,7 @@ These are source-reported figures, not fresh V3 full-data measurements.
 The project is intentionally flat:
 
 ```text
-lexcompact/
+g2lex/
 benchmarks/
 tests/
 examples/
@@ -92,18 +92,18 @@ Confirmed: **no `src/` directory exists**.
 V3 adds:
 
 ```text
-lexcompact/resolver.py
-lexcompact/segmentation.py
+g2lex/resolver.py
+g2lex/segmentation.py
 ```
 
 The single-file runtime format is now:
 
 ```text
-format = lexcompact.asset.v3
+format = g2lex.asset.v3
 schema = 3
 ```
 
-The V3 loader also accepts `lexcompact.asset.v2` / schema 2 and defaults the newly
+The V3 loader also accepts `g2lex.asset.v2` / schema 2 and defaults the newly
 introduced runtime fields to non-recursive/no-scorer behavior.
 
 ## 4. Standalone tests
@@ -191,13 +191,13 @@ regenerating `ABC`. No `AB -> recipe` record is persisted.
 This synthetic result validates the mechanism only; it is not a claim about real-language
 reduction ratios.
 
-## V5 exact typed runtime smoke validation
+## G2Lex v1 exact typed runtime smoke validation
 
-The V5 path was added without removing the V3/V4 reduction loaders. The focused V5 suite covers scalar, ordered-list, tagged, explicit-null, literal `None`, Unicode, empty-string, and word-only values; deterministic packing; virtual aliases; raw layer precedence; mmap loading; atomic self-verification; export; and corruption rejection.
+The G2Lex v1 path was added without removing the V3/V4 reduction loaders. The focused G2Lex v1 suite covers scalar, ordered-list, tagged, explicit-null, literal `None`, Unicode, empty-string, and word-only values; deterministic packing; virtual aliases; raw layer precedence; mmap loading; atomic self-verification; export; and corruption rejection.
 
 ```bash
 python -m pytest -q
-python -m ruff check lexcompact tests
+python -m ruff check g2lex tests
 ```
 
 Runtime measurements can be collected with the scripts in `benchmarks/lexicon_runtime/`. They report load, lookup, package-size, and Kokoro compatibility metrics. Performance targets are machine-dependent and are not substituted for logical verification.
@@ -207,9 +207,9 @@ Runtime measurements can be collected with the scripts in `benchmarks/lexicon_ru
 Executed against the repository-local German-style toy fixture:
 
 ```bash
-python -m lexcompact.cli reduce   benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv   /tmp/toy-recursive.lxc   --format tsv   --profile de-linkers   --recursive-components   --segmentation-scorer v2
+python -m g2lex.cli reduce   benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv   /tmp/toy-recursive.lxc   --format tsv   --profile de-linkers   --recursive-components   --segmentation-scorer v2
 
-python -m lexcompact.cli verify   benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv   /tmp/toy-recursive.lxc   --format tsv
+python -m g2lex.cli verify   benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv   /tmp/toy-recursive.lxc   --format tsv
 ```
 
 Measured:
@@ -267,7 +267,7 @@ the full built-in German asset is absent.
 ## 9. Packaging and dynamic versioning
 
 `pyproject.toml` discovers packages from the repository root and declares a dynamic
-version resolved by `lexcompact._version.__version__`.
+version resolved by `g2lex._version.__version__`.
 
 V3 fallback version:
 
@@ -278,14 +278,14 @@ V3 fallback version:
 Executed offline:
 
 ```bash
-python -m pip wheel . --no-build-isolation --no-deps -w /tmp/lexcompact-v3-wheel
-python -m pip install . --no-build-isolation --no-deps   --target /tmp/lexcompact-v3-install
+python -m pip wheel . --no-build-isolation --no-deps -w /tmp/g2lex-v3-wheel
+python -m pip install . --no-build-isolation --no-deps   --target /tmp/g2lex-v3-install
 ```
 
 Result: successful build/install of:
 
 ```text
-lexcompact-0.3.0.dev0-py3-none-any.whl
+g2lex-0.3.0.dev0-py3-none-any.whl
 ```
 
 An import from the installed target successfully:
@@ -297,7 +297,7 @@ An import from the installed target successfully:
 
 Backward-compatibility smoke test:
 
-1. a V2 source tree generated a `lexcompact.asset.v2` file;
+1. a V2 source tree generated a `g2lex.asset.v2` file;
 2. the installed V3 loader opened it;
 3. lookup returned the exact expected pronunciation;
 4. V2 correctly defaulted to `recursive_components=False` and no segmentation scorer.

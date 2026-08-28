@@ -1,4 +1,4 @@
-"""Measure cold and warm V5 lookups."""
+"""Measure cold and warm G2Lex v1 lookups."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import json
 import time
 from pathlib import Path
 
-from lexcompact import open_lexicon
+from g2lex import open
 
 
 def main() -> int:
@@ -15,7 +15,7 @@ def main() -> int:
     parser.add_argument("asset", type=Path)
     parser.add_argument("words", nargs="+")
     args = parser.parse_args()
-    lexicon = open_lexicon(args.asset)
+    lexicon = open(args.asset)
     try:
         started = time.perf_counter()
         for word in args.words:
@@ -25,7 +25,11 @@ def main() -> int:
         for word in args.words:
             lexicon.get(word)
         warm = time.perf_counter() - started
-        print(json.dumps({"lookups": len(args.words), "cold_seconds": cold, "warm_seconds": warm}, indent=2))
+        print(
+            json.dumps(
+                {"lookups": len(args.words), "cold_seconds": cold, "warm_seconds": warm}, indent=2
+            )
+        )
     finally:
         lexicon.close()
     return 0

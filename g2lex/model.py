@@ -44,6 +44,24 @@ class SourceInfo:
     format: str = ""
     path: str | None = None
     size_bytes: int | None = None
+    display_name: str | None = None
+    language: str | None = None
+    locale: str | None = None
+    dialect: str | None = None
+    provider: str | None = None
+    source_url: str | None = None
+    source_format: str | None = None
+    source_sha256: str | None = None
+    source_size_bytes: int | None = None
+    pronunciation_alphabet: str | None = None
+    pronunciation_separator: str | None = None
+    role_namespace: str | None = None
+    license_expression: str | None = None
+    license_name: str | None = None
+    license_url: str | None = None
+    attribution: str | None = None
+    generator: str | None = None
+    parser_id: str | None = None
 
 
 @dataclass(slots=True)

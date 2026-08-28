@@ -7,8 +7,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from lexcompact.asset import load
-from lexcompact.audit import audit_runtime_representation
+from g2lex.asset import load
+from g2lex.audit import audit_runtime_representation
 
 from .benchmark_memory import benchmark
 from .config import load_config

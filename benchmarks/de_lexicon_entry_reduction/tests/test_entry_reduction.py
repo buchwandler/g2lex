@@ -4,32 +4,31 @@ from pathlib import Path
 
 import pytest
 
-from lexcompact import LexiconData
-from lexcompact.asset import asset_members, dumps, load, loads, save
-from lexcompact.audit import audit_runtime_representation
-from lexcompact.builder import build_implicit_lexicon
-from lexcompact.composer import ImplicitComposer, SearchLimitError, best_segmentation
-from lexcompact.linkers import german_linker_table
-from lexcompact.membership import MembershipIndex
-from lexcompact.model import LiteralLexicon
-from lexcompact.optimizer import optimize_basis
-from lexcompact.prefix_index import LiteralPrefixIndex
-from lexcompact.profiles.german import (
+from g2lex.asset import asset_members, dumps, load, loads, save
+from g2lex.audit import audit_runtime_representation
+from g2lex.builder import build_implicit_lexicon
+from g2lex.composer import ImplicitComposer, SearchLimitError, best_segmentation
+from g2lex.linkers import german_linker_table
+from g2lex.membership import MembershipIndex
+from g2lex.model import LexiconData, LiteralLexicon
+from g2lex.optimizer import optimize_basis
+from g2lex.prefix_index import LiteralPrefixIndex
+from g2lex.profiles.german import (
     BoundaryStressClassRule,
     FinalComponentStressDemotionRule,
     german_rules,
 )
-from lexcompact.reports import summary_dict
-from lexcompact.rules import default_rules
-from lexcompact.segmentation import SegmentationScorer
-from lexcompact.selector import (
+from g2lex.reports import summary_dict
+from g2lex.rules import default_rules
+from g2lex.segmentation import SegmentationScorer
+from g2lex.selector import (
     Candidate,
     RuleSelector,
     SelectorPredicate,
     extract_features,
     train_selector,
 )
-from lexcompact.verify import adversarial_misses, verify_candidate
+from g2lex.verify import adversarial_misses, verify_candidate
 
 
 def make_source(*pairs: tuple[str, str]) -> LexiconData:

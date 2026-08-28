@@ -1,4 +1,4 @@
-"""High-level V5 packing, export, and comparison operations."""
+"""High-level G2Lex v1 packing, export, and comparison operations."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from .format_v5 import pack_typed
+from .format import pack_typed
 from .io import read_typed_lexicon
 from .lexicon import Lexicon, open_lexicon
 from .value import WORD_ONLY, TaggedValue, as_plain_selector, as_plain_value
-from .verify_v5 import verify_typed
+from .verify_exact import verify_typed
 
 
 def pack_file(
@@ -45,7 +45,7 @@ def pack_file(
     finally:
         candidate.close()
     if not verification["lossless"]:
-        raise ValueError(f"V5 self-verification failed: {verification}")
+        raise ValueError(f"G2Lex v1 self-verification failed: {verification}")
     destination = Path(output)
     destination.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(prefix=f".{destination.name}.", dir=destination.parent)
@@ -178,7 +178,7 @@ def convert_file(
     allow_lossy: bool = False,
 ) -> None:
     source_path = Path(source)
-    if source_path.read_bytes()[:4] == b"LXC5":
+    if source_path.read_bytes()[:4] == b"G2LX":
         export_file(source_path, output, format=output_format, allow_lossy=allow_lossy)
         return
     parsed = read_typed_lexicon(source_path, format=input_format)

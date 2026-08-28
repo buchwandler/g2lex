@@ -8,8 +8,8 @@ import ast
 import csv
 from pathlib import Path
 
-from lexcompact.asset import load
-from lexcompact.diagnostics import analyze_failures, write_diagnostics
+from g2lex.asset import load
+from g2lex.diagnostics import analyze_failures, write_diagnostics
 
 from .sources import load_source
 

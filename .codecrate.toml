@@ -1,9 +1,9 @@
 [codecrate]
-output = "context_lexcompact.md"
+output = "context_g2lex.md"
 keep_docstrings = true
 dedupe = true
 respect_gitignore = true
-exclude = ["*/.venv/*", "context_lexcompact.*"]
+exclude = ["*/.venv/*", "context_g2lex.*"]
 include = [
   "**/*.py",
   "**/*.toml",

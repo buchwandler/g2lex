@@ -1,16 +1,17 @@
 from pathlib import Path
 
-from lexcompact import LexiconData, reduce_lexicon
-from lexcompact.asset import load
-from lexcompact.asset_v4 import dumps as dumps_v4
-from lexcompact.asset_v4 import loads as loads_v4
-from lexcompact.audit import audit_runtime_representation
-from lexcompact.container import dumps as dump_container
-from lexcompact.container import loads as load_container
-from lexcompact.literals import BinaryPoolLiteralStore, RePairCodec, SymbolCodec
-from lexcompact.membership import DafsaBinaryMembership, SortedUTF8Membership
-from lexcompact.runtime import ReconstructionCandidate
-from lexcompact.selectors import StaticPrioritySelector
+from g2lex.asset import load
+from g2lex.asset_v4 import dumps as dumps_v4
+from g2lex.asset_v4 import loads as loads_v4
+from g2lex.audit import audit_runtime_representation
+from g2lex.container import dumps as dump_container
+from g2lex.container import loads as load_container
+from g2lex.experimental import reduce_lexicon
+from g2lex.literals import BinaryPoolLiteralStore, RePairCodec, SymbolCodec
+from g2lex.membership import DafsaBinaryMembership, SortedUTF8Membership
+from g2lex.model import LexiconData
+from g2lex.runtime import ReconstructionCandidate
+from g2lex.selectors import StaticPrioritySelector
 
 
 def test_membership_backends_are_exact_and_roundtrip():

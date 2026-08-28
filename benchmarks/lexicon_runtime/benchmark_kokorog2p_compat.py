@@ -1,4 +1,4 @@
-"""Exercise virtual alias and raw V5 lookup paths."""
+"""Exercise virtual alias and raw G2Lex v1 lookup paths."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import json
 import time
 from pathlib import Path
 
-from lexcompact import CaseAliasMapping, open_lexicon
+from g2lex import CaseAliasMapping, open
 
 
 def main() -> int:
@@ -15,7 +15,7 @@ def main() -> int:
     parser.add_argument("asset", type=Path)
     parser.add_argument("words", nargs="+")
     args = parser.parse_args()
-    raw = open_lexicon(args.asset)
+    raw = open(args.asset)
     mapping = CaseAliasMapping(raw)
     try:
         started = time.perf_counter()

@@ -2,7 +2,7 @@ schema_version = 3
 
 [project]
 uuid = "e47694ab-c957-4cbb-87d2-11215e4a1dfe"
-name = "lexcompact"
+name = "g2lex"
 
 [ledgers.taskledger.mounts.data]
 storage = "external"

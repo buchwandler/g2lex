@@ -1,4 +1,4 @@
-"""Build deterministic V5 assets from a JSON build manifest.
+"""Build deterministic G2Lex v1 assets from a JSON build manifest.
 
 The manifest is a JSON array of objects with ``source``, ``asset``, and optional
 ``format`` and ``metadata`` fields. Source hashes are recorded in the generated
@@ -12,7 +12,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from lexcompact import pack_file
+from g2lex import pack_file
 
 
 def main() -> int:
@@ -36,17 +36,21 @@ def main() -> int:
             source_id=record.get("source_id"),
             metadata=record.get("metadata"),
         )
-        assets.append({
-            "name": record.get("name", output.stem),
-            "source": str(source),
-            "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
-            "asset": str(output),
-            "asset_sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
-            "entries": summary["asset_entry_count"],
-        })
+        assets.append(
+            {
+                "name": record.get("name", output.stem),
+                "source": str(source),
+                "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                "asset": str(output),
+                "asset_sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
+                "entries": summary["asset_entry_count"],
+            }
+        )
     report = {"assets": assets}
-    destination = args.report or args.manifest.with_name("lexcompact-assets.json")
-    destination.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    destination = args.report or args.manifest.with_name("g2lex-assets.json")
+    destination.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
 

@@ -1,4 +1,4 @@
-"""Lazy runtime mapping for Lexcompact V5 files."""
+"""Lazy runtime mapping for G2Lex v1 files."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from contextlib import ExitStack
 from pathlib import Path
 from typing import Any
 
-from .format_v5 import V5Container
+from .format import BinaryLexiconContainer
 from .record_store import decode_record, decompress_block
 from .value import LexiconValue, TaggedValue
 
@@ -48,7 +48,9 @@ class LexiconRecord:
 class Lexicon(Mapping[str, LexiconValue]):
     """Immutable mapping whose keys and values are decoded on demand."""
 
-    def __init__(self, container: V5Container, *, owner: Any = None, cache_size: int = 8):
+    def __init__(
+        self, container: BinaryLexiconContainer, *, owner: Any = None, cache_size: int = 8
+    ):
         self._container = container
         self._owner = owner
         self._cache_size = max(1, cache_size)
@@ -174,7 +176,7 @@ def _open_mmap(path: Path) -> Lexicon:
     mapped = None
     try:
         mapped = mmap.mmap(handle.fileno(), 0, access=mmap.ACCESS_READ)
-        container = V5Container(memoryview(mapped))
+        container = BinaryLexiconContainer(memoryview(mapped))
     except Exception:
         if mapped is not None:
             mapped.close()
@@ -197,7 +199,7 @@ open = open_lexicon
 
 
 def open_bytes(data: bytes | bytearray | memoryview) -> Lexicon:
-    return Lexicon(V5Container(data))
+    return Lexicon(BinaryLexiconContainer(data))
 
 
 def open_traversable(resource: Any) -> Lexicon:

@@ -115,7 +115,7 @@ def aggregate(root: str | Path) -> dict[str, Any]:
         writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t")
         writer.writeheader()
         writer.writerows(leaderboard)
-    lines = ["# Lexcompact benchmark leaderboard", "", "\t".join(fields)]
+    lines = ["# G2Lex benchmark leaderboard", "", "\t".join(fields)]
     lines.extend("\t".join(str(row.get(field, "")) for field in fields) for row in leaderboard)
     (destination / "leaderboard.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     (destination / "pareto.json").write_text(
