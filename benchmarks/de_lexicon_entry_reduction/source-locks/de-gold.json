@@ -1,0 +1,14 @@
+{
+  "format": "json_single",
+  "git_blob_sha": "2293edc9b51e50283fc207f0ff8161c642af5856",
+  "kokorog2p_version": null,
+  "logical_word_count": 738427,
+  "ordered_variant_count": 738427,
+  "parser_version": "1",
+  "path": "de_gold.json",
+  "repository_commit": "2e1b9ffdefda094102d1caee4e1fceff955e8956",
+  "sha256": "2c30bcbb0a9a4fa172943026eea572f1e4ba82a799920b9d96e6ace59d273639",
+  "size_bytes": 31254760,
+  "source_id": "builtin",
+  "view_version": "1"
+}

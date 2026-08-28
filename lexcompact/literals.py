@@ -48,7 +48,7 @@ def _decode_variants(data: bytes | memoryview) -> PronunciationTuple:
 class BinaryPoolLiteralStore:
     """Sorted key and value pools with per-key lazy pronunciation decoding."""
 
-    backend_id = "binary-pool"
+    backend_id = "binary-pool-v2"
 
     def __init__(
         self,

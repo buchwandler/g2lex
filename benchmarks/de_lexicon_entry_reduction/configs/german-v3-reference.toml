@@ -1,0 +1,37 @@
+schema_version = 1
+strict = true
+seed = 1729
+expected_baseline_word_count = 738427
+release_mode = true
+output = "benchmarks/de_lexicon_entry_reduction/runs/german-v3-reference"
+source_lock = "benchmarks/de_lexicon_entry_reduction/source-locks/de-gold.json"
+[source]
+id = "builtin"
+path = "/ABSOLUTE/PINNED/PATH/de_gold.json"
+[limits]
+max_states = 100000
+max_components = 4
+max_recursive_depth = 4
+target_literals = 400000
+[storage]
+asset_format = "v3"
+membership_backend = "dafsa-json-v1"
+literal_backend = "dict-json-v3"
+pronunciation_codec = "utf8"
+[verification]
+required = true
+adversarial_misses = true
+[runtime]
+fresh_process = true
+sample_size = 10000
+repetitions = 3
+finalist_repetitions = 7
+[[cases]]
+name = "a0-v3-reference"
+mode = "implicit-compound"
+optimizer = "greedy"
+selector = "v1"
+boundary_rules = "v1"
+linkers = "v1"
+recursive_components = false
+segmentation_scorer = "v1"

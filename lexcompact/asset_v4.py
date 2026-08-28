@@ -10,12 +10,13 @@ from .composer import ImplicitComposer
 from .container import V4Container, dumps as container_dumps, load as container_load, load_traversable as container_load_traversable, loads as container_loads
 from .linkers import LinkerTable
 from .literals import BinaryPoolLiteralStore
-from .membership import DafsaBinaryMembership, MembershipIndex
+from .membership import BloomMembership, DafsaBinaryMembership, MembershipIndex
 from .model import ImplicitLexicon, LiteralLexicon, SourceInfo
 from .prefix_index import LiteralPrefixIndex
 from .rules import RuleSet
 from .segmentation import SegmentationScorer
-
+from .runtime import RuntimeProgram
+from .selectors import HashedLogisticSelector, GradientBoostedTreeSelector, StaticPrioritySelector, TreePredicate, TreeSelector
 ASSET_FORMAT = "lexcompact.asset.v4"
 ASSET_SCHEMA = 4
 
@@ -42,6 +43,7 @@ def manifest_dict(asset: ImplicitLexicon) -> dict[str, Any]:
         "membership_backend": getattr(asset.membership, "backend_id", "unknown"),
         "literal_backend": getattr(asset.literals, "backend_id", "unknown"),
         "runtime_program_version": "1",
+        "runtime_stages": [getattr(item, "stage_id", "unknown") for item in getattr(asset.runtime_program, "reconstructors", ())],
         "selector_kind": getattr(getattr(asset.runtime_program, "selector", None), "selector_id", "priority"),
         "source": _source_dict(asset.source),
         "config_sha256": str(asset.metadata.get("config_sha256", "")),
@@ -67,6 +69,8 @@ def asset_sections(asset: ImplicitLexicon) -> dict[str, bytes]:
     }
     sections.update(asset.literals.serialize_sections())
     sections.update(asset.membership.serialize_sections())
+    if asset.runtime_program.legacy_composer is None:
+        sections.update(asset.runtime_program.serialize_sections())
     return sections
 
 
@@ -85,6 +89,22 @@ def _section(container: V4Container, name: str) -> bytes:
         raise ValueError(f"V4 asset is missing section {name!r}") from exc
 
 
+def _selector_from_dict(value: dict[str, Any] | None):
+    if not value:
+        return StaticPrioritySelector()
+    selector_id = str(value.get("selector_id", "static-priority"))
+    if selector_id == "static-priority":
+        return StaticPrioritySelector(tuple(value.get("order", StaticPrioritySelector().order)))
+    if selector_id == "tree":
+        predicates = tuple(TreePredicate(str(item[0]), str(item[1]), str(item[2])) for item in value.get("predicates", ()))
+        return TreeSelector(predicates, tuple(value.get("default_order", StaticPrioritySelector().order)))
+    if selector_id == "hashed-logistic":
+        weights = tuple((int(bucket), tuple((str(stage), int(weight)) for stage, weight in entries)) for bucket, entries in value.get("weights", ()))
+        return HashedLogisticSelector(weights, int(value.get("bucket_count", 1024)))
+    if selector_id == "gbdt":
+        return GradientBoostedTreeSelector(tuple((str(stage), int(score)) for stage, score in value.get("stage_scores", ())))
+    raise ValueError(f"unsupported serialized selector: {selector_id}")
+
 def loads(data: bytes | bytearray | memoryview | V4Container) -> ImplicitLexicon:
     container = data if isinstance(data, V4Container) else container_loads(data)
     manifest = json.loads(_section(container, "manifest.json"))
@@ -96,8 +116,16 @@ def loads(data: bytes | bytearray | memoryview | V4Container) -> ImplicitLexicon
     else:
         literals = LiteralLexicon(json.loads(_section(container, "literals.json")))
     index = LiteralPrefixIndex.from_dict(json.loads(_section(container, "literal-index.json")))
-    if "membership.dafsa-binary" in container:
+    if "membership.bloom" in container:
+        if "membership.bloom-exact" not in container:
+            raise ValueError("V4 Bloom membership is missing its exact backend")
+        exact = DafsaBinaryMembership.deserialize(_section(container, "membership.bloom-exact"))
+        membership = BloomMembership.deserialize(_section(container, "membership.bloom"), exact)
+    elif "membership.dafsa-binary" in container:
         membership = DafsaBinaryMembership.deserialize(_section(container, "membership.dafsa-binary"))
+    elif "membership.sorted-utf8" in container:
+        from .membership import SortedUTF8Membership
+        membership = SortedUTF8Membership.deserialize(_section(container, "membership.sorted-utf8"))
     else:
         membership = MembershipIndex.deserialize(_section(container, "membership.dafsa"))
     rules = RuleSet.from_dict(json.loads(_section(container, "rules.json")))
@@ -115,7 +143,15 @@ def loads(data: bytes | bytearray | memoryview | V4Container) -> ImplicitLexicon
     metadata = dict(config.get("metadata", {}))
     metadata.setdefault("baseline_word_count", int(manifest["baseline_word_count"]))
     metadata.setdefault("per_generated_word_recipe_count", 0)
-    asset = ImplicitLexicon(source, literals, index, membership, composer, metadata)
+    runtime_program = None
+    if "runtime-program.json" in container:
+        runtime_config = json.loads(_section(container, "runtime-program.json"))
+        runtime_program = RuntimeProgram.from_v4(
+            composer,
+            _selector_from_dict(runtime_config.get("selector")),
+            stage_ids=tuple(str(item.get("stage_id")) for item in runtime_config.get("reconstructors", ()) if item.get("stage_id")),
+        )
+    asset = ImplicitLexicon(source, literals, index, membership, composer, metadata, runtime_program)
     if len(asset) != int(manifest["baseline_word_count"]):
         raise ValueError("V4 membership count does not match manifest")
     if len(literals) != int(manifest["literal_word_count"]):

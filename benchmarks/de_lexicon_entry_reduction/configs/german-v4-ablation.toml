@@ -1,0 +1,83 @@
+schema_version = 1
+strict = true
+seed = 1729
+expected_baseline_word_count = 738427
+release_mode = true
+output = "benchmarks/de_lexicon_entry_reduction/runs/german-v4-ablation"
+source_lock = "benchmarks/de_lexicon_entry_reduction/source-locks/de-gold.json"
+[source]
+id = "builtin"
+path = "/ABSOLUTE/PINNED/PATH/de_gold.json"
+[limits]
+max_states = 100000
+max_components = 4
+max_recursive_depth = 4
+target_literals = 400000
+[verification]
+required = true
+adversarial_misses = true
+[runtime]
+fresh_process = true
+sample_size = 10000
+repetitions = 3
+finalist_repetitions = 7
+[storage]
+asset_format = "v4"
+membership_backend = "dafsa-binary-v2"
+literal_backend = "binary-pool-v2"
+pronunciation_codec = "utf8"
+[[cases]]
+name = "a1-v4-container-control"
+mode = "implicit-compound"
+optimizer = "greedy"
+selector = "v1"
+boundary_rules = "v1"
+linkers = "v1"
+recursive_components = false
+segmentation_scorer = "v1"
+[[cases]]
+name = "b2-binary-storage"
+inherits = "a1-v4-container-control"
+[ cases.storage ]
+membership_backend = "dafsa-binary-v2"
+literal_backend = "binary-pool-v2"
+[[cases]]
+name = "c0-existing-strong"
+inherits = "b2-binary-storage"
+boundary_rules = "v2"
+linkers = "german"
+recursive_components = true
+segmentation_scorer = "v2"
+[ cases.methods.compound ]
+enabled = true
+[ cases.methods.selector ]
+kind = "static-priority"
+[[cases]]
+name = "c7-plus-morphology"
+inherits = "c0-existing-strong"
+[ cases.methods.morphology ]
+enabled = true
+max_rules = 256
+min_support = 25
+[[cases]]
+name = "c8-plus-rewrite"
+inherits = "c0-existing-strong"
+[ cases.methods.rewrite ]
+enabled = true
+max_rules = 256
+min_support = 25
+[[cases]]
+name = "c9-plus-cart"
+inherits = "c0-existing-strong"
+[ cases.methods.cart ]
+enabled = true
+max_bytes = 1048576
+max_output_chunk_length = 4
+[[cases]]
+name = "c10-plus-graphone"
+inherits = "c0-existing-strong"
+[ cases.methods.graphone ]
+enabled = true
+order = 1
+max_bytes = 1048576
+max_graphemes_per_unit = 2

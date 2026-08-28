@@ -353,8 +353,8 @@ class MarisaMembership(SortedUTF8Membership):
 
 class BloomMembership:
     """Packed Bloom negative prefilter over an exact backend."""
-    backend_id = "bloom"
-
+    backend_id = "bloom+dafsa-binary-v2"
+    exact_backend_id = "dafsa-binary-v2"
     def __init__(self, backend: ExactMembership, bits_per_key: int = 10, hash_count: int = 3, seed: int = 0) -> None:
         if bits_per_key <= 0 or hash_count <= 0:
             raise ValueError("Bloom parameters must be positive")
@@ -367,37 +367,46 @@ class BloomMembership:
         for word in backend.iter_words():
             for index in self._positions(word):
                 self._bits[index // 8] |= 1 << (index % 8)
-
     def _positions(self, word: str):
         raw = word.encode("utf-8")
         for index in range(self.hash_count):
             digest = hashlib.blake2b(raw, digest_size=8, person=b"lxc-bloom", key=struct.pack("<Q", self.seed + index)).digest()
             yield int.from_bytes(digest, "little") % self._bit_count
-
     def contains(self, word: str) -> bool:
         if any(not (self._bits[index // 8] & (1 << (index % 8))) for index in self._positions(word)):
             return False
         return self.backend.contains(word)
-
     def iter_words(self):
         return self.backend.iter_words()
-
     def prefixes(self, text: str, position: int = 0):
         return self.backend.prefixes(text, position)
-
     @property
     def word_count(self):
         return self.backend.word_count
-
     @property
     def serialized_bytes(self):
-        return len(self.serialize())
-
+        return len(self.serialize()) + self.backend.serialized_bytes
     def serialize(self) -> bytes:
         return struct.pack("<4sIIII", b"BLM1", self.bits_per_key, self.hash_count, self.seed, self._bit_count) + bytes(self._bits)
-
     def serialize_sections(self):
-        return {"membership.bloom": self.serialize()}
+        return {"membership.bloom": self.serialize(), "membership.bloom-exact": self.backend.serialize()}
+    @classmethod
+    def deserialize(cls, data: bytes | memoryview, backend: ExactMembership) -> "BloomMembership":
+        view = memoryview(data)
+        if len(view) < 20 or bytes(view[:4]) != b"BLM1":
+            raise ValueError("invalid Bloom membership header")
+        _, bits_per_key, hash_count, seed, bit_count = struct.unpack_from("<4sIIII", view)
+        bits = bytes(view[20:])
+        if bit_count < 8 or len(bits) != (bit_count + 7) // 8:
+            raise ValueError("invalid Bloom membership bit array")
+        result = cls.__new__(cls)
+        result.backend = backend
+        result.bits_per_key = bits_per_key
+        result.hash_count = hash_count
+        result.seed = seed
+        result._bit_count = bit_count
+        result._bits = bytearray(bits)
+        return result
 
 
 class XorFilterMembership(BloomMembership):

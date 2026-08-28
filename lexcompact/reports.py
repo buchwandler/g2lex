@@ -16,13 +16,18 @@ def summary_dict(build: BuildResult, *, verification: dict[str, Any] | None = No
         "entry_reduction_count": metrics.entry_reduction_count,
         "entry_reduction_rate": metrics.entry_reduction_rate,
         "per_generated_word_recipe_count": metrics.per_generated_word_recipe_count,
-        "membership_state_count": build.asset.membership.state_count,
-        "membership_edge_count": build.asset.membership.edge_count,
+        "membership_state_count": int(getattr(build.asset.membership, "state_count", 0)),
+        "membership_edge_count": int(getattr(build.asset.membership, "edge_count", 0)),
         "membership_serialized_bytes": build.asset.membership.serialized_bytes,
         "literal_index_state_count": build.asset.literal_index.state_count,
         "search_limit_words": build.search_limit_words,
         "membership_enumeration_matches": build.membership_enumeration_matches,
         "target_literal_word_count": int(build.asset.metadata.get("target_literal_word_count", 400_000)),
+        "stage_coverage": build.telemetry.get("stages", {}),
+        "build_telemetry": build.telemetry,
+        "membership_backend": getattr(build.asset.membership, "backend_id", "unknown"),
+        "literal_backend": getattr(build.asset.literals, "backend_id", "unknown"),
+        "pronunciation_codec": build.asset.metadata.get("pronunciation_codec", {"id": "utf8"}),
     }
     result["target_met"] = result["literal_word_count"] <= result["target_literal_word_count"]
     if verification is not None:
