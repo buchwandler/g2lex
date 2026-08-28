@@ -1,3 +1,6 @@
+[![PyPI - Version](https://img.shields.io/pypi/v/g2lex)](https://pypi.org/project/g2lex/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/g2lex)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/g2lex)
 [![codecov](https://codecov.io/gh/buchwandler/g2lex/graph/badge.svg?token=yWCTDNP3mF)](https://codecov.io/gh/buchwandler/g2lex)
 
 # G2Lex
