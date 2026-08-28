@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from .linkers import LinkerTable
-from .prefix_index import LiteralPrefixIndex
+from .prefix_index import LiteralPrefixIndex, MutableLiteralPrefixIndex
 from .rules import RuleSet
 from .runtime import OverlayMapping
+
+PrefixIndex = LiteralPrefixIndex | MutableLiteralPrefixIndex
 
 
 class SearchLimitError(RuntimeError):
@@ -27,7 +29,7 @@ class DerivationResult:
 
 def top_k_segmentations(
     word: str,
-    prefix_index: LiteralPrefixIndex,
+    prefix_index: PrefixIndex,
     literals: Mapping[str, tuple[str, ...]],
     *,
     k: int = 8,
@@ -49,7 +51,7 @@ def top_k_segmentations(
         if states > max_states:
             raise SearchLimitError(f"search limit {max_states} reached for {word!r}")
         if position == len(word):
-            result = ((),) if component_count >= 2 else ()
+            result: tuple[tuple[str, ...], ...] = ((),) if component_count >= 2 else ()
             cache[key] = result
             return result
         if component_count >= max_components:
@@ -76,7 +78,7 @@ def segmentation_rank(
 
 def best_segmentation(
     word: str,
-    prefix_index: LiteralPrefixIndex,
+    prefix_index: PrefixIndex,
     literals: Mapping[str, tuple[str, ...]],
     *,
     max_components: int = 4,
@@ -99,7 +101,7 @@ def best_segmentation(
         if states > max_states:
             raise SearchLimitError(f"search limit {max_states} reached for {word!r}")
         if position == len(word):
-            result = () if component_count >= 2 else None
+            result: tuple[str, ...] | None = () if component_count >= 2 else None
             cache[key] = result
             return result
         if component_count >= max_components:
@@ -126,7 +128,7 @@ def best_segmentation(
 
 def best_two_part_segmentation(
     word: str,
-    prefix_index: LiteralPrefixIndex,
+    prefix_index: PrefixIndex,
     literals: Mapping[str, tuple[str, ...]],
 ) -> tuple[str, ...] | None:
     """Scan split points directly for the common two-component case."""
@@ -145,7 +147,7 @@ class ImplicitComposer:
 
     max_components: int = 4
     max_states: int = 100_000
-    rules: RuleSet = None  # type: ignore[assignment]
+    rules: RuleSet = field(default_factory=RuleSet)
     two_part_fast_path: bool = True
 
     linkers: LinkerTable | None = None
@@ -162,7 +164,7 @@ class ImplicitComposer:
         word: str,
         *,
         literals: Mapping[str, tuple[str, ...]],
-        prefix_index: LiteralPrefixIndex,
+        prefix_index: PrefixIndex,
         resolver: Any | None = None,
         context: Any | None = None,
     ) -> tuple[str, ...] | None:
@@ -180,7 +182,7 @@ class ImplicitComposer:
         word: str,
         *,
         literals: Mapping[str, tuple[str, ...]],
-        prefix_index: LiteralPrefixIndex,
+        prefix_index: PrefixIndex,
         resolver: Any | None = None,
         context: Any | None = None,
     ) -> DerivationResult | None:

@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from ..model import SourceInfo, TypedLexiconData
-from ..value import TaggedValue
+from ..value import LexiconValue, TaggedValue
 
 _XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
 
@@ -49,7 +49,7 @@ def parse_pls_bytes(
         raise ValueError("PLS lexicon must declare one default alphabet")
     language = root.attrib.get(_XML_LANG, root.attrib.get("lang"))
 
-    entries: dict[str, object] = {}
+    entries: dict[str, LexiconValue] = {}
     lexeme_count = 0
     for lexeme in root:
         if _name(lexeme) != "lexeme":
@@ -76,7 +76,7 @@ def parse_pls_bytes(
         if len(roles) > 1:
             raise ValueError("unsupported PLS construct: multiple roles per lexeme")
         word = graphemes[0]
-        value: object = phonemes[0] if len(phonemes) == 1 else tuple(phonemes)
+        value: str | tuple[str, ...] = phonemes[0] if len(phonemes) == 1 else tuple(phonemes)
         role = roles[0] if roles else None
         previous = entries.get(word)
         if previous is None:
@@ -89,7 +89,7 @@ def parse_pls_bytes(
             except KeyError:
                 entries[word] = TaggedValue(previous.items + ((role, value),))
             else:
-                old_values = (old,) if isinstance(old, str) else old
+                old_values = (old,) if isinstance(old, str) else (old or ())
                 entries[word] = TaggedValue(
                     tuple(
                         (tag, old_values + tuple(phonemes) if tag == role else selector)

@@ -87,8 +87,9 @@ def _write_json(path: Path, entries: Mapping[str, Any]) -> None:
 
 
 def _write_jsonl(path: Path, entries: Mapping[str, Any]) -> None:
-    lines = []
+    lines: list[str] = []
     for word, value in entries.items():
+        record: dict[str, Any]
         if value is WORD_ONLY:
             record = {"word": word, "kind": "word"}
         elif isinstance(value, TaggedValue):
@@ -108,7 +109,7 @@ def _write_jsonl(path: Path, entries: Mapping[str, Any]) -> None:
 def _write_tsv(
     path: Path, entries: Mapping[str, Any], *, extended: bool, allow_lossy: bool
 ) -> None:
-    lines = []
+    lines: list[str] = []
     for word, value in entries.items():
         if not extended:
             if value is WORD_ONLY or isinstance(value, TaggedValue):
@@ -142,8 +143,12 @@ def export_file(
     format: str = "auto",
     allow_lossy: bool = False,
 ) -> None:
-    owned = isinstance(asset, (str, Path))
-    lexicon = open_lexicon(asset) if owned else asset
+    if isinstance(asset, (str, Path)):
+        lexicon = open_lexicon(asset)
+        owned = True
+    else:
+        lexicon = asset
+        owned = False
     try:
         destination = Path(output)
         fmt = format

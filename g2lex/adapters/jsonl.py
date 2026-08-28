@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from ..model import TypedLexiconData
-from ..value import WORD_ONLY, TaggedValue
+from ..value import WORD_ONLY, LexiconValue, SelectorValue, TaggedValue
 from .common import parse_selector_value, parse_value, result
 
 
@@ -21,7 +21,7 @@ def parse_jsonl_bytes(
         text = data.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise ValueError(f"{label}: invalid UTF-8 JSONL: {exc}") from exc
-    entries = {}
+    entries: dict[str, LexiconValue] = {}
     rows = 0
     for line_number, line in enumerate(text.splitlines(), 1):
         if not line.strip():
@@ -41,6 +41,7 @@ def parse_jsonl_bytes(
         if word in entries:
             raise ValueError(f"{label}:{line_number}: duplicate word {word!r}")
         kind = record.get("kind")
+        value: LexiconValue
         if kind == "word":
             value = WORD_ONLY
         elif kind == "scalar":
@@ -55,7 +56,7 @@ def parse_jsonl_bytes(
             items = record.get("items")
             if not isinstance(items, list):
                 raise ValueError(f"{label}:{line_number}: tagged items must be a list")
-            pairs = []
+            pairs: list[tuple[str, SelectorValue]] = []
             for pair in items:
                 if not isinstance(pair, list) or len(pair) != 2 or not isinstance(pair[0], str):
                     raise ValueError(f"{label}:{line_number}: invalid tagged item")

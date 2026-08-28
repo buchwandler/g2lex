@@ -156,11 +156,11 @@ class RandomForestSelector:
     def choose(
         self, word_features: Any, candidates: Sequence[ReconstructionCandidate]
     ) -> ReconstructionCandidate | None:
-        votes = Counter(
-            tree.choose(word_features, candidates).stage_id
-            for tree in self.trees
-            if tree.choose(word_features, candidates) is not None
-        )
+        votes: Counter[str] = Counter()
+        for tree in self.trees:
+            chosen = tree.choose(word_features, candidates)
+            if chosen is not None:
+                votes[chosen.stage_id] += 1
         if not votes:
             return None
         stage, _ = max(votes.items(), key=lambda item: (item[1], item[0]))

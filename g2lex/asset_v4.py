@@ -15,8 +15,8 @@ from .container import load_traversable as container_load_traversable
 from .container import loads as container_loads
 from .linkers import LinkerTable
 from .literals import BinaryPoolLiteralStore
-from .membership import BloomMembership, DafsaBinaryMembership, MembershipIndex
-from .model import ImplicitLexicon, LiteralLexicon, SourceInfo
+from .membership import BloomMembership, DafsaBinaryMembership, ExactMembership, MembershipIndex
+from .model import ImplicitLexicon, LiteralLexicon, LiteralStore, SourceInfo
 from .prefix_index import LiteralPrefixIndex
 from .rules import RuleSet
 from .runtime import RuntimeProgram
@@ -93,6 +93,7 @@ def asset_sections(asset: ImplicitLexicon) -> dict[str, bytes]:
     }
     sections.update(asset.literals.serialize_sections())
     sections.update(asset.membership.serialize_sections())
+    assert asset.runtime_program is not None
     if asset.runtime_program.legacy_composer is None:
         sections.update(asset.runtime_program.serialize_sections())
     return sections
@@ -149,11 +150,13 @@ def loads(data: bytes | bytearray | memoryview | V4Container) -> ImplicitLexicon
     }:
         raise ValueError("unsupported G2Lex reduction asset")
     source = SourceInfo(**manifest["source"])
+    literals: LiteralStore
     if "literals.binary-pool" in container:
         literals = BinaryPoolLiteralStore.deserialize(_section(container, "literals.binary-pool"))
     else:
         literals = LiteralLexicon(json.loads(_section(container, "literals.json")))
     index = LiteralPrefixIndex.from_dict(json.loads(_section(container, "literal-index.json")))
+    membership: ExactMembership
     if "membership.bloom" in container:
         if "membership.bloom-exact" not in container:
             raise ValueError("V4 Bloom membership is missing its exact backend")

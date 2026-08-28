@@ -8,7 +8,7 @@ from contextlib import closing
 from pathlib import Path
 
 from ..model import SourceInfo, TypedLexiconData
-from ..value import TaggedValue
+from ..value import LexiconValue, TaggedValue
 
 
 def parse_gruut_sqlite(path: str | Path, *, source_id: str | None = None) -> TypedLexiconData:
@@ -37,7 +37,7 @@ def parse_gruut_sqlite(path: str | Path, *, source_id: str | None = None) -> Typ
             grouped.setdefault(word, {}).setdefault(role, []).append(phonemes)
             physical_rows += 1
 
-    entries = {}
+    entries: dict[str, LexiconValue] = {}
     for word, by_role in grouped.items():
         if set(by_role) == {None}:
             values = by_role[None]
@@ -45,12 +45,12 @@ def parse_gruut_sqlite(path: str | Path, *, source_id: str | None = None) -> Typ
             continue
         if None in by_role:
             raise ValueError("Gruut SQLite record mixes tagged and untagged pronunciations")
-        entries[word] = TaggedValue(
-            tuple(
-                (role, values[0] if len(values) == 1 else tuple(values))
-                for role, values in by_role.items()
-            )
-        )
+        tagged_items: list[tuple[str, str | tuple[str, ...] | None]] = []
+        for role, values in by_role.items():
+            if role is None:
+                raise ValueError("Gruut SQLite tagged records need role names")
+            tagged_items.append((role, values[0] if len(values) == 1 else tuple(values)))
+        entries[word] = TaggedValue(tuple(tagged_items))
     source = SourceInfo(
         source_id=source_id or source_path.stem,
         provider="gruut",

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 
 from ..model import TypedLexiconData
-from ..value import WORD_ONLY, TaggedValue
+from ..value import WORD_ONLY, LexiconValue, SelectorValue, TaggedValue
 from .common import parse_selector_value, result
 
 
@@ -48,7 +49,7 @@ def parse_extended_tsv_bytes(
 ) -> TypedLexiconData:
     text, label = _text(data, path, source_id, "lxc-tsv")
     rows = 0
-    grouped: dict[str, list[tuple[str, object]]] = {}
+    grouped: dict[str, list[tuple[str, SelectorValue]]] = {}
     for line_number, line in enumerate(text.splitlines(), 1):
         rows += 1
         fields = line.split("\t")
@@ -85,10 +86,10 @@ def parse_extended_tsv_bytes(
         elif kind == "word":
             if selector or encoded:
                 raise ValueError(f"{label}:{line_number}: word row has unexpected data")
-            grouped.setdefault(word, []).append(("__word__", WORD_ONLY))
+            grouped.setdefault(word, []).append(("__word__", None))
         else:
             raise ValueError(f"{label}:{line_number}: unsupported kind {kind!r}")
-    entries = {}
+    entries: dict[str, LexiconValue] = {}
     for word, rows_for_word in grouped.items():
         kinds = {marker for marker, _ in rows_for_word}
         if "__word__" in kinds:
@@ -98,10 +99,14 @@ def parse_extended_tsv_bytes(
         elif "__list__" in kinds:
             if len(rows_for_word) != 1:
                 raise ValueError(f"{label}: list entry {word!r} has multiple rows")
-            entries[word] = rows_for_word[0][1]
+            entries[word] = cast(LexiconValue, rows_for_word[0][1])
         elif "" in kinds:
             values = [value for marker, value in rows_for_word if marker == ""]
-            entries[word] = values[0] if len(values) == 1 else tuple(values)
+            entries[word] = (
+                cast(str, values[0])
+                if len(values) == 1
+                else tuple(cast(str, value) for value in values)
+            )
         else:
             entries[word] = TaggedValue(tuple(rows_for_word))
     return result(

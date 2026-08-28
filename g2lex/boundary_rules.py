@@ -88,6 +88,6 @@ def _stats() -> Any:
     return RuleStats()
 
 
-def diagnostic_boundary_rules() -> tuple[object, ...]:
+def diagnostic_boundary_rules() -> tuple[Any, ...]:
     """Return the bounded rule library used by the B1 stage."""
     return (FinalComponentStressDemotionRule(), BoundaryStressClassRule())

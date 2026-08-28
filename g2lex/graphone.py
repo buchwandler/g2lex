@@ -6,6 +6,7 @@ import json
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from typing import cast
 
 from .runtime import ReconstructionCandidate
 from .training.alignment import align
@@ -73,13 +74,16 @@ class GraphoneModel:
     @classmethod
     def from_dict(cls, value: Mapping[str, object]) -> GraphoneModel:
         model = cls(
-            tuple((str(key), str(output)) for key, output in value.get("units", ())),
-            int(value.get("order", 1)),
-            int(value.get("max_graphemes_per_unit", 2)),
-            int(value.get("max_pronunciation_codepoints_per_unit", 4)),
-            int(value.get("beam_width", 8)),
-            int(value.get("max_states", 10000)),
-            int(value.get("max_bytes", 1024 * 1024)),
+            tuple(
+                (str(key), str(output))
+                for key, output in cast(Iterable[tuple[object, object]], value.get("units", ()))
+            ),
+            int(str(value.get("order", 1))),
+            int(str(value.get("max_graphemes_per_unit", 2))),
+            int(str(value.get("max_pronunciation_codepoints_per_unit", 4))),
+            int(str(value.get("beam_width", 8))),
+            int(str(value.get("max_states", 10000))),
+            int(str(value.get("max_bytes", 1024 * 1024))),
         )
         if model.serialized_bytes > model.max_bytes:
             raise ValueError("graphone model exceeds byte budget")

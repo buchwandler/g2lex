@@ -6,6 +6,7 @@ import json
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from typing import cast
 
 from .runtime import ReconstructionCandidate
 from .training.alignment import align
@@ -73,9 +74,12 @@ class CARTModel:
     @classmethod
     def from_dict(cls, value: Mapping[str, object]) -> CARTModel:
         model = cls(
-            tuple((tuple(key), str(output)) for key, output in value.get("table", ())),
+            tuple(
+                (tuple(cast(Iterable[str], key)), str(output))
+                for key, output in cast(Iterable[tuple[object, object]], value.get("table", ()))
+            ),
             str(value.get("default_output", "")),
-            int(value.get("max_bytes", 1024 * 1024)),
+            int(str(value.get("max_bytes", 1024 * 1024))),
             str(value.get("version", "cart-v1")),
         )
         if model.serialized_bytes > model.max_bytes:

@@ -93,7 +93,7 @@ def _build_container(sections: Mapping[str, bytes], *, flags: int = 0) -> bytes:
         raise ValueError("G2Lex container needs sections")
     names = sorted(sections)
     output = bytearray(HEADER.size)
-    descriptors = []
+    descriptors: list[tuple[bytes, int, int, int, int, bytes]] = []
     for name in names:
         name_bytes = name.encode("utf-8")
         if not name_bytes or len(name_bytes) > 65535:
@@ -108,9 +108,9 @@ def _build_container(sections: Mapping[str, bytes], *, flags: int = 0) -> bytes:
     toc_offset = _align(len(output))
     output.extend(b"\0" * (toc_offset - len(output)))
     toc = bytearray(TOC_PREFIX.pack(len(descriptors)))
-    for name, offset, stored_size, raw_size, alignment, digest in descriptors:
-        toc.extend(struct.pack(">H", len(name)))
-        toc.extend(name)
+    for name_bytes, offset, stored_size, raw_size, alignment, digest in descriptors:
+        toc.extend(struct.pack(">H", len(name_bytes)))
+        toc.extend(name_bytes)
         toc.extend(TOC_ENTRY.pack(offset, stored_size, raw_size, alignment, 0, digest))
     output.extend(toc)
     file_size = len(output)
@@ -244,7 +244,7 @@ class BinaryLexiconContainer:
         self.manifest = self._read_manifest()
         if self.manifest.get("format") != "g2lex.lexicon.v1":
             raise ValueError("invalid G2Lex manifest format")
-        if int(self.manifest.get("schema", -1)) != SCHEMA:
+        if int(str(self.manifest.get("schema", -1))) != SCHEMA:
             raise ValueError("G2Lex manifest schema mismatch")
         required = {"manifest.json", "keys.fci", "records.blocks", "records.dir", "tags.bin"}
         if not required.issubset(self._sections):
@@ -254,7 +254,7 @@ class BinaryLexiconContainer:
 
         self.tags = decode_tags(self.section_view("tags.bin"))
         block_entries, count, descriptors = _read_directory(self.section_view("records.dir"))
-        if count != len(self.key_index) or count != int(self.manifest.get("entry_count", -1)):
+        if count != len(self.key_index) or count != int(str(self.manifest.get("entry_count", -1))):
             raise ValueError("G2Lex logical count mismatch")
         codec = str(self.manifest.get("record_codec", ""))
         if codec not in {"none-block-v1", "zlib-block-v1"}:

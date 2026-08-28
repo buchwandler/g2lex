@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +22,7 @@ def source_info(path: Path | None, data: bytes, fmt: str, source_id: str | None)
 
 
 def result(
-    entries: dict[str, LexiconValue],
+    entries: Mapping[str, LexiconValue],
     *,
     path: Path | None,
     data: bytes,
@@ -30,7 +31,7 @@ def result(
     physical_rows: int,
 ) -> TypedLexiconData:
     return TypedLexiconData(
-        entries,
+        dict(entries),
         source=source_info(path, data, fmt, source_id),
         physical_rows=physical_rows,
     )

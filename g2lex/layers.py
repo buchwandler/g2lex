@@ -5,7 +5,7 @@ from __future__ import annotations
 import heapq
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from .value import LexiconValue
 
@@ -45,7 +45,7 @@ class CaseAliasMapping(Mapping[str, LexiconValue]):
     def __getitem__(self, word: str) -> LexiconValue:
         value = self.raw.get(word, _MISSING)
         if value is not _MISSING:
-            return value
+            return cast(LexiconValue, value)
         owner = self._alias_owner(word)
         if owner is None:
             raise KeyError(word)

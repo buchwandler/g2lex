@@ -6,6 +6,7 @@ import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any
 
 from .asset import load, runtime_asset_bytes, save
 from .io import LexiconData, read_lexicon, write_lexicon
@@ -149,6 +150,7 @@ def _plain_lookup(value):
 
 
 def _cmd_lookup(args: argparse.Namespace) -> int:
+    candidate: Any
     if args.asset.read_bytes()[:4] != b"G2LX":
         candidate = load(args.asset)
         values = candidate.lookup_all(args.word)
@@ -175,8 +177,8 @@ def _cmd_inspect(args: argparse.Namespace) -> int:
     candidate = load(args.asset)
     summary = {
         **asdict(candidate.metrics()),
-        "membership_state_count": candidate.membership.state_count,
-        "membership_edge_count": candidate.membership.edge_count,
+        "membership_state_count": getattr(candidate.membership, "state_count", 0),
+        "membership_edge_count": getattr(candidate.membership, "edge_count", 0),
         "membership_serialized_bytes": candidate.membership.serialized_bytes,
         "asset_bytes": runtime_asset_bytes(args.asset),
         "source": asdict(candidate.source),

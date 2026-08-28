@@ -32,7 +32,7 @@ class TaggedValue(Mapping[str, SelectorValue]):
     ``value.items`` and the normal mapping spelling ``value.items()`` are useful.
     """
 
-    items: tuple[tuple[str, SelectorValue], ...]
+    items: tuple[tuple[str, SelectorValue], ...]  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
         pairs: list[tuple[str, SelectorValue]] = []
@@ -135,7 +135,7 @@ def _canonical_value(buffer: bytearray, value: LexiconValue) -> None:
         buffer.extend(struct.pack(">I", len(value)))
         for item in value:
             _put_text(buffer, item)
-    else:
+    elif isinstance(value, TaggedValue):
         buffer.append(3)
         buffer.extend(struct.pack(">I", len(value.items)))
         for tag, selector in value.items:

@@ -6,7 +6,7 @@ import hashlib
 import json
 import struct
 from bisect import bisect_left
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from itertools import pairwise
 from typing import Any, Protocol
@@ -18,7 +18,7 @@ class ExactMembership(Protocol):
     backend_id: str
 
     def contains(self, word: str) -> bool: ...
-    def iter_words(self) -> Iterator[str]: ...
+    def iter_words(self) -> Iterable[str]: ...
     def prefixes(self, text: str, position: int = 0) -> tuple[str, ...]: ...
 
     @property
@@ -26,6 +26,8 @@ class ExactMembership(Protocol):
 
     @property
     def serialized_bytes(self) -> int: ...
+
+    def serialize(self) -> bytes: ...
 
     def serialize_sections(self) -> Mapping[str, bytes]: ...
 
@@ -56,6 +58,8 @@ class MembershipIndex:
         for word in sorted(words):
             node = root
             for character in word:
+                if node.edges is None:
+                    raise AssertionError("build node edges were not initialized")
                 node = node.edges.setdefault(character, _BuildNode())
             node.terminal = True
 
@@ -64,6 +68,8 @@ class MembershipIndex:
         edges: list[tuple[tuple[str, int], ...]] = []
 
         def intern(node: _BuildNode) -> int:
+            if node.edges is None:
+                raise AssertionError("build node edges were not initialized")
             children = tuple(
                 (character, intern(child)) for character, child in sorted(node.edges.items())
             )
@@ -110,7 +116,7 @@ class MembershipIndex:
             state = next_state
         return self.terminal_states[state]
 
-    def iter_words(self) -> Iterator[str]:
+    def iter_words(self) -> tuple[str, ...]:
         """Return deterministic words for compatibility and offline export."""
 
         def visit(state: int, prefix: str) -> Iterator[str]:
@@ -290,21 +296,21 @@ class DafsaBinaryMembership(MembershipIndex):
         edge_rows: list[tuple[int, int, int, int]] = []
         state_rows: list[tuple[int, int]] = []
         labels = bytearray()
-        for edges in self.edges:
+        for state_edges in self.edges:
             start = len(edge_rows)
-            for label, target in edges:
+            for label, target in state_edges:
                 encoded = label.encode("utf-8")
                 offset = len(labels)
                 labels.extend(encoded)
                 edge_rows.append(
                     (offset, len(encoded), target, ord(label) if len(label) == 1 else 0)
                 )
-            state_rows.append((start, len(edges)))
+            state_rows.append((start, len(state_edges)))
         header = struct.pack("<4sIIII", b"DFA2", 2, self.root, state_count, edge_count)
         terminals = bytes(int(value) for value in self.terminal_states)
         states = b"".join(struct.pack("<II", start, count) for start, count in state_rows)
-        edges = b"".join(struct.pack("<IIII", *row) for row in edge_rows)
-        return header + terminals + states + edges + bytes(labels)
+        serialized_edges = b"".join(struct.pack("<IIII", *row) for row in edge_rows)
+        return header + terminals + states + serialized_edges + bytes(labels)
 
     @classmethod
     def deserialize(cls, data: bytes) -> DafsaBinaryMembership:

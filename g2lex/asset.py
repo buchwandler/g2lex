@@ -37,7 +37,7 @@ def _source_dict(source: SourceInfo) -> dict[str, Any]:
 
 def manifest_dict(asset: ImplicitLexicon) -> dict[str, Any]:
     metrics = asset.metrics()
-    target = int(asset.metadata.get("target_literal_word_count", 400_000))
+    target = int(str(asset.metadata.get("target_literal_word_count", 400_000)))
     return {
         "schema": ASSET_SCHEMA,
         "format": ASSET_FORMAT,

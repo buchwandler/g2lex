@@ -89,9 +89,9 @@ class BinaryPoolLiteralStore:
                 raise TypeError("pool arrays are required when values are absent")
             self._keys = keys
             self._key_offsets = key_offsets
-            self._key_pool = key_pool
+            self._key_pool = bytes(key_pool)
             self._value_offsets = value_offsets
-            self._value_pool = value_pool
+            self._value_pool = bytes(value_pool)
         if len(self._keys) + 1 != len(self._key_offsets) or len(self._keys) + 1 != len(
             self._value_offsets
         ):

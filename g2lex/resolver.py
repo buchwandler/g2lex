@@ -82,7 +82,7 @@ class ComponentResolver:
             if context.states > min(self.max_states, max_states):
                 raise SearchLimitError(f"recursive search limit {max_states} reached for {word!r}")
             if position == len(word):
-                result = ((),) if count >= 2 else ()
+                result: tuple[tuple[str, ...], ...] = ((),) if count >= 2 else ()
                 cache[key] = result
                 return result
             if count >= max_components:

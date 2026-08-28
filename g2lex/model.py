@@ -108,9 +108,12 @@ class LexiconData:
         unique: dict[str, PronunciationTuple] = {}
         for word, values in self.entries.items():
             seen: set[str] = set()
-            unique[word] = tuple(
-                value for value in values if not (value in seen or seen.add(value))
-            )
+            result: list[str] = []
+            for value in values:
+                if value not in seen:
+                    seen.add(value)
+                    result.append(value)
+            unique[word] = tuple(result)
         return LexiconData(
             unique,
             self.source,
@@ -139,9 +142,10 @@ class LiteralLexicon(Mapping[str, PronunciationTuple]):
 
     backend_id = "dict-json-v3"
 
-    def __init__(self, values: Mapping[str, Iterable[str]] = ()) -> None:
+    def __init__(self, values: Mapping[str, Iterable[str]] | None = None) -> None:
         self._values = {
-            word: tuple(pronunciations) for word, pronunciations in sorted(dict(values).items())
+            word: tuple(pronunciations)
+            for word, pronunciations in sorted(dict(values or {}).items())
         }
         lengths: dict[str, set[int]] = {}
         for word in self._values:
@@ -294,6 +298,7 @@ class ImplicitLexicon(Mapping[str, str]):
         from .resolver import ResolveContext
 
         context = ResolveContext() if self._resolver is not None else None
+        assert self.runtime_program is not None
         generated = self.runtime_program.reconstruct(
             word,
             literals=self.literals,
@@ -315,7 +320,7 @@ class ImplicitLexicon(Mapping[str, str]):
 
     @property
     def per_generated_word_recipe_count(self) -> int:
-        return int(self.metadata.get("per_generated_word_recipe_count", 0))
+        return int(str(self.metadata.get("per_generated_word_recipe_count", 0)))
 
     @property
     def literal_word_count(self) -> int:
@@ -326,7 +331,7 @@ class ImplicitLexicon(Mapping[str, str]):
         return len(self) - len(self.literals)
 
     def metrics(self) -> CandidateMetrics:
-        baseline_count = int(self.metadata.get("baseline_word_count", len(self)))
+        baseline_count = int(str(self.metadata.get("baseline_word_count", len(self))))
         return CandidateMetrics(
             baseline_count,
             len(self.literals),
@@ -346,7 +351,7 @@ class ImplicitLexicon(Mapping[str, str]):
     def __len__(self) -> int:
         baseline_count = self.metadata.get("baseline_word_count")
         if baseline_count is not None:
-            return int(baseline_count)
+            return int(str(baseline_count))
         return int(self.membership.word_count)
 
     def __contains__(self, word: object) -> bool:

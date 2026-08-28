@@ -183,9 +183,12 @@ def _open_mmap(path: Path) -> Lexicon:
         handle.close()
         raise
 
+    assert mapped is not None
+    mapped_owner = mapped
+
     class _Owner:
         def close(self) -> None:
-            mapped.close()
+            mapped_owner.close()
             handle.close()
 
     return Lexicon(container, owner=_Owner())

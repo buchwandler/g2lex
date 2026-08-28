@@ -12,7 +12,7 @@ import json
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .composer import SearchLimitError, top_k_segmentations
 from .model import ImplicitLexicon, LexiconData
@@ -107,8 +107,8 @@ def analyze_failures(
     for key in ("forced-literal", "search-limit", "no-composition", "pronunciation-mismatch"):
         classifications.setdefault(key, [])
 
-    alternate = Counter()
-    topk_counts = Counter()
+    alternate: Counter[str] = Counter()
+    topk_counts: Counter[str] = Counter()
     family_counts: Counter[str] = Counter()
     family_patterns: dict[tuple[str, str], dict[str, Any]] = {}
     mismatch_details: list[dict[str, Any]] = []
@@ -142,7 +142,7 @@ def analyze_failures(
             segmentations = top_k_segmentations(
                 word,
                 asset.literal_index,
-                asset.literals,
+                cast(Mapping[str, tuple[str, ...]], asset.literals),
                 k=top_k,
                 max_components=asset.composer.max_components,
                 max_states=asset.composer.max_states,
@@ -174,9 +174,9 @@ def analyze_failures(
         )
         boundary = _boundary_family(actual, expected_first, components, variants, boundary_window)
         family_counts[boundary["family"]] += 1
-        key = (boundary["family"], boundary["template"])
+        pattern_key = (boundary["family"], boundary["template"])
         pattern = family_patterns.setdefault(
-            key,
+            pattern_key,
             {
                 "support_count": 0,
                 "exact_count_if_applied": 0,
@@ -265,7 +265,7 @@ def linker_diagnostics(source: LexiconData, asset: ImplicitLexicon) -> dict[str,
         expected = source.lookup_all(word)
         exact = False
         for candidate in candidates:
-            temporary = dict(asset.literals)
+            temporary = {word: asset.literals[word] for word in asset.literals}
             temporary[candidate.linker.spelling] = candidate.linker.pronunciation
             rules = _rule_candidates(asset, word, candidate.components, temporary)
             if any(tuple(row["pronunciation"]) == expected for row in rules):

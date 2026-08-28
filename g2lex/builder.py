@@ -49,7 +49,7 @@ def build_implicit_lexicon(
         composer = ImplicitComposer(
             max_components=max_components,
             max_states=max_states,
-            rules=rules,
+            rules=rules or RuleSet(),
             linkers=linkers,
             recursive_components=recursive_components,
             max_recursive_depth=max_recursive_depth,

@@ -6,6 +6,7 @@ import json
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from typing import cast
 
 from .runtime import ReconstructionCandidate
 
@@ -47,9 +48,14 @@ class NeuralModel:
     def from_dict(cls, value: Mapping[str, object]) -> NeuralModel:
         model = cls(
             str(value["architecture"]),
-            tuple((str(key), str(output)) for key, output in value.get("character_outputs", ())),
+            tuple(
+                (str(key), str(output))
+                for key, output in cast(
+                    Iterable[tuple[object, object]], value.get("character_outputs", ())
+                )
+            ),
             str(value.get("default_output", "")),
-            int(value.get("max_bytes", 2 * 1024 * 1024)),
+            int(str(value.get("max_bytes", 2 * 1024 * 1024))),
         )
         if model.serialized_bytes > model.max_bytes:
             raise ValueError("neural model exceeds byte budget")

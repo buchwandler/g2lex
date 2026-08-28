@@ -6,7 +6,7 @@ import json
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from .model import PronunciationTuple
 from .runtime import ReconstructionCandidate
@@ -48,7 +48,12 @@ class AffixRule:
 
     @classmethod
     def from_dict(cls, value: Mapping[str, object]) -> AffixRule:
-        return cls(**{name: value[name] for name in cls.__dataclass_fields__ if name in value})
+        return cls(
+            **cast(
+                dict[str, Any],
+                {name: value[name] for name in cls.__dataclass_fields__ if name in value},
+            )
+        )
 
     def apply(self, word: str, context: Any) -> tuple[ReconstructionCandidate, ...]:
         if self.spelling_prefix and not word.startswith(self.spelling_prefix):
@@ -205,7 +210,12 @@ class RewriteRule:
 
     @classmethod
     def from_dict(cls, value: Mapping[str, object]) -> RewriteRule:
-        return cls(**{name: value[name] for name in cls.__dataclass_fields__ if name in value})
+        return cls(
+            **cast(
+                dict[str, Any],
+                {name: value[name] for name in cls.__dataclass_fields__ if name in value},
+            )
+        )
 
     def applies(self, word: str, pronunciation: str, stage_id: str | None = None) -> bool:
         if self.source_stage is not None and self.source_stage != stage_id:
@@ -280,7 +290,7 @@ def induce_rewrite_rules(
     rules: list[RewriteRule] = []
     for index, row in enumerate(observations):
         pattern = str(row.get("pattern", ""))
-        if not pattern or len(pattern) > int(row.get("max_context_length", 8)):
+        if not pattern or len(pattern) > int(str(row.get("max_context_length", 8))):
             continue
         rules.append(
             RewriteRule(
@@ -292,7 +302,7 @@ def induce_rewrite_rules(
                 str(row.get("pronunciation_right", "")),
                 pattern,
                 str(row.get("replacement", "")),
-                row.get("source_stage"),
+                cast(str | None, row.get("source_stage")),
             )
         )
         if len(rules) >= max_rules:

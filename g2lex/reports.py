@@ -28,7 +28,7 @@ def summary_dict(
         "search_limit_words": build.search_limit_words,
         "membership_enumeration_matches": build.membership_enumeration_matches,
         "target_literal_word_count": int(
-            build.asset.metadata.get("target_literal_word_count", 400_000)
+            str(build.asset.metadata.get("target_literal_word_count", 400_000))
         ),
         "stage_coverage": build.telemetry.get("stages", {}),
         "build_telemetry": build.telemetry,

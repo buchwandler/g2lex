@@ -20,7 +20,7 @@ LEXICON_PROFILES = {
 }
 
 _CACHE: dict[object, Mapping[str, LexiconValue]] = {}
-_CacheInfo = namedtuple("LexiconCacheInfo", "hits misses maxsize currsize")
+_CacheInfo = namedtuple("_CacheInfo", "hits misses maxsize currsize")
 _CACHE_HITS = 0
 _CACHE_MISSES = 0
 

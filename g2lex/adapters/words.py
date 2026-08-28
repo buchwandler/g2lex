@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..model import TypedLexiconData
-from ..value import WORD_ONLY
+from ..value import WORD_ONLY, LexiconValue
 from .common import result
 
 
@@ -20,7 +20,7 @@ def parse_word_list_bytes(
         text = data.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise ValueError(f"{label}: invalid UTF-8 word list: {exc}") from exc
-    entries = {}
+    entries: dict[str, LexiconValue] = {}
     rows = 0
     for line_number, word in enumerate(text.splitlines(), 1):
         rows += 1
