@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from .membership import ExactMembership
+
 PronunciationTuple = tuple[str, ...]
 
 
@@ -83,7 +84,7 @@ class LexiconData:
     def is_known(self, word: str) -> bool:
         return word in self.entries
 
-    def runtime_unique(self) -> "LexiconData":
+    def runtime_unique(self) -> LexiconData:
         unique: dict[str, PronunciationTuple] = {}
         for word, values in self.entries.items():
             seen: set[str] = set()
@@ -93,7 +94,7 @@ class LexiconData:
         return LexiconData(
             unique,
             self.source,
-            sum(len(values) for values in unique.values()),
+            self.physical_rows,
             {**self.metadata, "view": "runtime_unique"},
         )
 
@@ -102,7 +103,7 @@ class LexiconData:
         cls,
         *pairs: tuple[str, str],
         source: SourceInfo | None = None,
-    ) -> "LexiconData":
+    ) -> LexiconData:
         entries: dict[str, list[str]] = {}
         for word, pronunciation in pairs:
             entries.setdefault(word, []).append(pronunciation)

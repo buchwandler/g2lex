@@ -1,0 +1,60 @@
+schema_version = 1
+strict = true
+seed = 1729
+
+output = "benchmarks/de_lexicon_entry_reduction/runs/crane-wiktionary-v4"
+
+[source]
+id = "crane_wiktionary"
+
+[limits]
+max_states = 100000
+max_components = 4
+max_recursive_depth = 4
+# Cross-corpus stretch target. The primary metric is logical entry reduction.
+target_literals = 400000
+
+[verification]
+required = true
+adversarial_misses = true
+
+[runtime]
+fresh_process = true
+sample_size = 10000
+repetitions = 3
+finalist_repetitions = 7
+
+[storage]
+asset_format = "v4"
+membership_backend = "dafsa-binary-v2"
+literal_backend = "binary-pool-v2"
+pronunciation_codec = "utf8"
+
+[[cases]]
+name = "a0-v4-concat-control"
+mode = "implicit-concat"
+optimizer = "greedy"
+selector = "v1"
+boundary_rules = "v1"
+linkers = "v1"
+recursive_components = false
+segmentation_scorer = "v1"
+
+[[cases]]
+name = "a1-v4-german-compound"
+inherits = "a0-v4-concat-control"
+mode = "implicit-compound"
+
+[[cases]]
+name = "a2-v4-existing-strong"
+inherits = "a1-v4-german-compound"
+boundary_rules = "v2"
+linkers = "german"
+recursive_components = true
+segmentation_scorer = "v2"
+
+[[cases]]
+name = "a3-v4-existing-strong-utility"
+inherits = "a2-v4-existing-strong"
+optimizer = "utility"
+max_passes = 4

@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import platform
 import resource
 import statistics
 import subprocess
 import sys
 import time
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
 
 
 def _snapshot() -> dict[str, int | None]:
@@ -40,8 +39,19 @@ def _faults() -> dict[str, int]:
 
 
 def _diff(after: dict[str, int | None], before: dict[str, int | None]) -> dict[str, int | None]:
-    return {key: (after[key] - before[key] if after[key] is not None and before[key] is not None else after[key]) for key in after}
+    return {
+        key: after[key] - before[key] if after[key] is not None and before[key] is not None else None
+        for key in after
+    }
 
+
+
+def _saved(baseline: int | None, candidate: int | None) -> tuple[int | None, float | None]:
+    if baseline is None or candidate is None:
+        return None, None
+    saved = baseline - candidate
+    rate = saved / baseline if baseline else None
+    return saved, rate
 
 def _worker(kind: str, run: Path, source: str, data_root: Path | None, path: Path | None) -> None:
     before = _snapshot()
@@ -141,12 +151,25 @@ def benchmark(run: Path, *, source: str = "builtin", data_root: Path | None = No
     baseline_loads = [float(item["load_ms"]) for item in baseline_runs]
     candidate_loads = [float(item["load_ms"]) for item in candidate_runs]
     candidate_memory = candidate_runs[-1]["post_load"]
+    baseline_memory_delta = baseline_runs[-1]["memory_delta"]
+    candidate_memory_delta = candidate_runs[-1]["memory_delta"]
+    rss_saved_bytes, rss_saved_rate = _saved(baseline_memory_delta.get("VmRSS"), candidate_memory_delta.get("VmRSS"))
+    pss_saved_bytes, pss_saved_rate = _saved(baseline_memory_delta.get("Pss"), candidate_memory_delta.get("Pss"))
     return {
         "baseline_load_ms_median": statistics.median(baseline_loads),
         "candidate_load_ms_median": statistics.median(candidate_loads),
         "baseline_memory": baseline_runs[-1]["post_load"],
         "candidate_memory": candidate_memory,
-        "candidate_memory_delta": candidate_runs[-1]["memory_delta"],
+        "baseline_memory_delta": baseline_memory_delta,
+        "candidate_memory_delta": candidate_memory_delta,
+        "baseline_rss_delta_bytes": baseline_memory_delta.get("VmRSS"),
+        "candidate_rss_delta_bytes": candidate_memory_delta.get("VmRSS"),
+        "rss_saved_bytes": rss_saved_bytes,
+        "rss_saved_rate": rss_saved_rate,
+        "baseline_pss_delta_bytes": baseline_memory_delta.get("Pss"),
+        "candidate_pss_delta_bytes": candidate_memory_delta.get("Pss"),
+        "pss_saved_bytes": pss_saved_bytes,
+        "pss_saved_rate": pss_saved_rate,
         "candidate_page_faults": candidate_runs[-1]["page_faults"],
         "candidate_ru_maxrss": candidate_runs[-1]["ru_maxrss"],
         "repetitions": repetitions,

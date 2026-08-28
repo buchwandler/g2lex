@@ -18,6 +18,7 @@ from lexcompact.model import LexiconData, SourceInfo
 
 ROOT = Path(__file__).resolve().parent
 MANIFEST_PATH = ROOT / "source_manifest.toml"
+DEFAULT_CACHE_DIR = Path.home() / ".cache" / "lexcompact" / "benchmarks" / "de-lexicons"
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,7 +87,11 @@ def resolve_source_path(spec: SourceSpec, data_root: Path | None = None, path: P
         return None
     if spec.kind == "local_file" and spec.filename is not None and data_root is None:
         return ROOT / spec.filename
-    if data_root is None or spec.filename is None:
+    if spec.filename is None:
+        return None
+    if data_root is None and spec.kind == "huggingface_file":
+        data_root = DEFAULT_CACHE_DIR
+    if data_root is None:
         return None
     candidates = (
         data_root / spec.filename,
@@ -94,8 +99,6 @@ def resolve_source_path(spec: SourceSpec, data_root: Path | None = None, path: P
         data_root / (spec.revision or "") / spec.filename,
     )
     return next((candidate for candidate in candidates if candidate.is_file()), candidates[0])
-
-
 def _with_source(parsed: LexiconData, source: SourceInfo) -> LexiconData:
     return LexiconData(parsed.entries, source, parsed.physical_rows, dict(parsed.metadata)).runtime_unique()
 
@@ -128,6 +131,12 @@ def load_source(source_id: str, *, data_root: Path | None = None, path: Path | N
         return _with_source(parsed, spec.source_info(size_bytes=len(data), sha256=hashlib.sha256(data).hexdigest()))
     resolved = resolve_source_path(spec, data_root, path)
     if resolved is None or not resolved.is_file():
+        if spec.kind == "huggingface_file":
+            raise FileNotFoundError(
+                f"Source {source_id!r} is unavailable at the default cache or supplied data root; "
+                "download it explicitly with: python -m benchmarks.de_lexicon_entry_reduction.download_sources "
+                f"--source {source_id} --download"
+            )
         raise FileNotFoundError(
             f"Source {source_id!r} is unavailable; provide --data-root or --path for {spec.filename}"
         )

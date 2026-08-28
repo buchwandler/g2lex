@@ -18,6 +18,14 @@ def _load(root: Path) -> list[dict[str, Any]]:
         value["rss_after_load"] = (runtime.get("candidate_memory") or {}).get("VmRSS")
         value["pss_after_load"] = (runtime.get("candidate_memory") or {}).get("Pss")
         value["literal_qps"] = runtime.get("literal_lookup_words_per_second")
+        value["baseline_rss_delta_bytes"] = runtime.get("baseline_rss_delta_bytes")
+        value["candidate_rss_delta_bytes"] = runtime.get("candidate_rss_delta_bytes")
+        value["rss_saved_bytes"] = runtime.get("rss_saved_bytes")
+        value["rss_saved_rate"] = runtime.get("rss_saved_rate")
+        value["baseline_pss_delta_bytes"] = runtime.get("baseline_pss_delta_bytes")
+        value["candidate_pss_delta_bytes"] = runtime.get("candidate_pss_delta_bytes")
+        value["pss_saved_bytes"] = runtime.get("pss_saved_bytes")
+        value["pss_saved_rate"] = runtime.get("pss_saved_rate")
         value["generated_qps"] = runtime.get("generated_lookup_words_per_second")
         value["miss_qps"] = runtime.get("miss_lookup_words_per_second")
         value["generated_p50_ms"] = runtime.get("generated_lookup_p50_ms")
@@ -43,8 +51,9 @@ def aggregate(root: str | Path) -> dict[str, Any]:
     destination = Path(root)
     rows = _load(destination)
     rows.sort(key=lambda item: (not bool(item.get("lossless", False)), item.get("literal_word_count", 10**18), item.get("asset_bytes", 10**18)))
-    pareto = [row for row in rows if not any(_dominates(other, row) for other in rows if other is not row)]
-    fields = ("case", "lossless", "baseline_word_count", "literal_word_count", "generated_word_count", "entry_reduction_rate", "asset_bytes", "load_ms_median", "rss_after_load", "pss_after_load", "literal_qps", "generated_qps", "miss_qps", "generated_p50_ms", "generated_p95_ms", "generated_p99_ms", "build_seconds", "runtime_model_bytes")
+    comparable_rows = [row for row in rows if row.get("lossless")] or rows
+    pareto = [row for row in comparable_rows if not any(_dominates(other, row) for other in comparable_rows if other is not row)]
+    fields = ("case", "source_id", "source_physical_rows", "source_logical_word_count", "source_ordered_variant_count", "lossless", "baseline_word_count", "literal_word_count", "generated_word_count", "entry_reduction_rate", "asset_bytes", "membership_serialized_bytes", "load_ms_median", "rss_after_load", "pss_after_load", "baseline_rss_delta_bytes", "candidate_rss_delta_bytes", "rss_saved_bytes", "rss_saved_rate", "baseline_pss_delta_bytes", "candidate_pss_delta_bytes", "pss_saved_bytes", "pss_saved_rate", "literal_qps", "generated_qps", "miss_qps", "generated_p50_ms", "generated_p95_ms", "generated_p99_ms", "build_seconds", "runtime_model_bytes")
     leaderboard = [{field: row.get(field) for field in fields} for row in rows]
     (destination / "leaderboard.json").write_text(json.dumps(leaderboard, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     with (destination / "leaderboard.tsv").open("w", encoding="utf-8", newline="") as handle:

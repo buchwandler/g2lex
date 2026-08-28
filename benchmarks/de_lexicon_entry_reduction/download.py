@@ -1,10 +1,13 @@
 """Explicit, pinned source downloads."""
 from __future__ import annotations
-import os, tempfile, urllib.request
-from pathlib import Path
-from .sources import SourceSpec, sha256_file
 
-DEFAULT_CACHE_DIR = Path.home() / ".cache" / "lexcompact" / "benchmarks" / "de-lexicons"
+import os
+import tempfile
+import urllib.request
+from pathlib import Path
+
+from .sources import DEFAULT_CACHE_DIR, SourceSpec, sha256_file
+
 
 def source_url(spec: SourceSpec) -> str:
     if not spec.revision or not spec.filename:
