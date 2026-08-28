@@ -1,0 +1,7 @@
+lexcompact MVP
+
+The design was informed by the Apache-2.0-licensed KokoroG2P repository, in particular
+its experiments/de_lexicon_entry_reduction research harness and the adjacent pinned
+lexicon-source/download tooling. This standalone MVP keeps the same conservative
+lookup-semantic-lossless principle while exposing the reducer as an independent,
+language-neutral Python library and CLI.
