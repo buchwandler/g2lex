@@ -25,7 +25,9 @@ def _source() -> LexiconData:
 
 @pytest.mark.parametrize("optimizer", ("greedy", "utility"))
 def test_reduce_lexicon_supports_both_optimizers(optimizer: str) -> None:
-    result = reduce_lexicon(_source(), config=ReductionConfig(optimizer=optimizer, target_literals=0))
+    result = reduce_lexicon(
+        _source(), config=ReductionConfig(optimizer=optimizer, target_literals=0)
+    )
 
     assert result.asset.metadata["target_literal_word_count"] == 0
     assert verify_candidate(result.asset, _source())["lossless"]

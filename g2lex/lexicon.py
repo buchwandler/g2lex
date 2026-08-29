@@ -12,7 +12,7 @@ from typing import Any
 
 from .format import BinaryLexiconContainer
 from .record_store import decode_record, decompress_block
-from .value import LexiconValue, TaggedValue
+from .value import LexiconValue, TaggedValue, first_pronunciation, pronunciation_variants
 
 
 class LexiconRecord:
@@ -119,6 +119,32 @@ class Lexicon(Mapping[str, LexiconValue]):
         self._ensure_open()
         ordinal = self._container.key_index.find(word)
         return default if ordinal is None else self._value_at(ordinal)
+
+    def lookup_all(
+        self,
+        word: str,
+        tag: str | None = None,
+        default_tag: str = "DEFAULT",
+    ) -> tuple[str, ...]:
+        """Return ordered pronunciation variants for ``word``."""
+        missing = object()
+        value = self.get(word, missing)
+        if value is missing:
+            return ()
+        return pronunciation_variants(value, tag=tag, default_tag=default_tag)
+
+    def lookup(
+        self,
+        word: str,
+        tag: str | None = None,
+        default_tag: str = "DEFAULT",
+    ) -> str | None:
+        """Return the first source-ordered pronunciation for ``word``."""
+        missing = object()
+        value = self.get(word, missing)
+        if value is missing:
+            return None
+        return first_pronunciation(value, tag=tag, default_tag=default_tag)
 
     def __contains__(self, word: object) -> bool:
         self._ensure_open()

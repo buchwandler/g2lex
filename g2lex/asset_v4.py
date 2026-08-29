@@ -44,6 +44,7 @@ def _source_dict(source: SourceInfo) -> dict[str, Any]:
     result["path"] = Path(source.path).name if source.path else None
     return result
 
+
 def manifest_dict(asset: ImplicitLexicon) -> dict[str, Any]:
     metrics = asset.metrics()
     return {

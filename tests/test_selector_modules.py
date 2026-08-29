@@ -39,6 +39,9 @@ def test_selector_serialization_and_choice_remain_deterministic() -> None:
     assert selector.choose({}, candidates) == candidates[1]
     assert selector.as_dict() == StaticPrioritySelector().as_dict()
     assert selector.serialized_bytes > 0
-    assert TreeSelector((TreePredicate("kind", "compound", "compound"),)).choose(
-        {"kind": "compound"}, candidates
-    ) == candidates[1]
+    assert (
+        TreeSelector((TreePredicate("kind", "compound", "compound"),)).choose(
+            {"kind": "compound"}, candidates
+        )
+        == candidates[1]
+    )

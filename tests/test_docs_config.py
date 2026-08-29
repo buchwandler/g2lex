@@ -18,7 +18,7 @@ def test_docs_conf_does_not_shadow_stdlib_selectors(cwd: Path) -> None:
 import runpy
 from pathlib import Path
 
-runpy.run_path({str(DOCS / 'conf.py')!r})
+runpy.run_path({str(DOCS / "conf.py")!r})
 import selectors
 
 selectors_path = Path(selectors.__file__).resolve()

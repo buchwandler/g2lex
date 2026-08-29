@@ -31,7 +31,9 @@ class TreeSelector:
         for predicate in self.predicates:
             if feature_value(word_features, predicate.feature) == predicate.value:
                 matching = [
-                    candidate for candidate in candidates if candidate.stage_id == predicate.stage_id
+                    candidate
+                    for candidate in candidates
+                    if candidate.stage_id == predicate.stage_id
                 ]
                 if matching:
                     return min(matching, key=candidate_value)

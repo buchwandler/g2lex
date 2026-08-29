@@ -15,8 +15,6 @@ from .search import SearchLimitError, segmentation_rank
 PrefixIndex = LiteralPrefixIndex | MutableLiteralPrefixIndex
 
 
-
-
 @dataclass(frozen=True, slots=True)
 class DerivationResult:
     components: tuple[str, ...]
@@ -65,8 +63,6 @@ def top_k_segmentations(
         return result
 
     return visit(0, 0)
-
-
 
 
 def best_segmentation(

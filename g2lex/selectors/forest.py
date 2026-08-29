@@ -41,6 +41,7 @@ class RandomForestSelector:
     def serialized_bytes(self):
         return len(json.dumps(self.as_dict(), sort_keys=True, separators=(",", ":")).encode())
 
+
 ForestSelector = RandomForestSelector
 
 __all__ = ["ForestSelector", "RandomForestSelector"]

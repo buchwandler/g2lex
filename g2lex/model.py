@@ -62,7 +62,6 @@ class SourceInfo:
     generator: str | None = None
     parser_id: str | None = None
 
-
     def __post_init__(self) -> None:
         """Normalize legacy and canonical provenance names in memory."""
         source_sha256 = self.source_sha256 or (self.sha256 or None)
@@ -87,6 +86,7 @@ class SourceInfo:
         value["source_size_bytes"] = self.source_size_bytes
         value["source_format"] = self.source_format
         return value
+
 
 @dataclass(slots=True)
 class LexiconData:

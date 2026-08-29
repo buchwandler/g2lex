@@ -27,7 +27,6 @@ class ComponentResolver:
     max_depth: int = 4
     max_states: int = 100_000
 
-
     def resolve(self, word: str, context: ResolveContext | None = None) -> tuple[str, ...] | None:
         context = context or ResolveContext()
         literal = self.literals.get(word)

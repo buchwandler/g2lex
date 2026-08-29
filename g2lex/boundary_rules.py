@@ -83,8 +83,6 @@ class BoundaryStressClassRule:
         }
 
 
-
-
 def diagnostic_boundary_rules() -> tuple[Any, ...]:
     """Return the bounded rule library used by the B1 stage."""
     return (FinalComponentStressDemotionRule(), BoundaryStressClassRule())

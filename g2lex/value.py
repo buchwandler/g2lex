@@ -184,3 +184,45 @@ def as_plain_selector(value: SelectorValue) -> object:
     if isinstance(value, tuple):
         return list(value)
     return value
+
+
+def _select_pronunciation_value(
+    value: LexiconValue | SelectorValue,
+    *,
+    tag: str | None = None,
+    default_tag: str = "DEFAULT",
+) -> SelectorValue | _WordOnly:
+    """Resolve a tagged value to one selector value without altering it."""
+    if not isinstance(value, TaggedValue):
+        return value
+    if tag is not None and tag in value:
+        return value[tag]
+    if default_tag in value:
+        return value[default_tag]
+    return None
+
+
+def pronunciation_variants(
+    value: LexiconValue | SelectorValue,
+    *,
+    tag: str | None = None,
+    default_tag: str = "DEFAULT",
+) -> tuple[str, ...]:
+    """Return ordered pronunciation variants represented by ``value``."""
+    selected = _select_pronunciation_value(value, tag=tag, default_tag=default_tag)
+    if selected is None or selected is WORD_ONLY:
+        return ()
+    if isinstance(selected, str):
+        return (selected,)
+    return selected
+
+
+def first_pronunciation(
+    value: LexiconValue | SelectorValue,
+    *,
+    tag: str | None = None,
+    default_tag: str = "DEFAULT",
+) -> str | None:
+    """Return the first source-ordered pronunciation represented by ``value``."""
+    variants = pronunciation_variants(value, tag=tag, default_tag=default_tag)
+    return variants[0] if variants else None

@@ -25,6 +25,7 @@ _FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 
 LoadedAsset = Lexicon | ImplicitLexicon
 
+
 def _json_bytes(value: object) -> bytes:
     return (
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"

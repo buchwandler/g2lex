@@ -6,7 +6,16 @@ from pathlib import Path
 
 import pytest
 
-from g2lex import WORD_ONLY, TaggedValue, open_bytes, open_traversable
+from g2lex import (
+    WORD_ONLY,
+    TaggedValue,
+    first_pronunciation,
+    open,
+    open_bytes,
+    open_traversable,
+    pack_file,
+    pronunciation_variants,
+)
 from g2lex.format import BinaryLexiconContainer, pack_typed
 from g2lex.lexicon import Lexicon, LexiconRecord, open_lexicon
 
@@ -77,9 +86,36 @@ def test_mapping_select_iteration_and_missing_behavior() -> None:
         assert lexicon.select("tagged", "ALT") == "a"
         assert lexicon.select("tagged", "MISSING") == "d"
         assert lexicon.select("only-default", "MISSING") == "d"
+        assert lexicon.lookup_all("plain") == ("p",)
+        assert lexicon.lookup("plain") == "p"
+        assert lexicon.lookup_all("tagged", tag="ALT") == ("a",)
+        assert lexicon.lookup("tagged", tag="MISSING") == "d"
+        assert lexicon.lookup_all("missing") == ()
+        assert lexicon.lookup("missing") is None
+        assert pronunciation_variants(lexicon["tagged"], tag="ALT") == ("a",)
+        assert first_pronunciation(lexicon["tagged"], tag="ALT") == "a"
         assert lexicon.select("none", "MISSING", missing="missing") == "missing"
     finally:
         lexicon.close()
+
+
+def test_plain_tsv_compiled_asset_keeps_exact_variants_and_selects_pronunciations(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "fixture.tsv"
+    source.write_text("Haus\thˈaʊs\nHaus\thaʊs\nTür\ttyːɐ\n", encoding="utf-8")
+    asset = tmp_path / "fixture.g2lex"
+    pack_file(source, asset, input_format="tsv")
+
+    with open(asset) as lexicon:
+        raw = lexicon["Haus"]
+        assert raw == ("hˈaʊs", "haʊs")
+        assert lexicon.lookup_all("Haus") == ("hˈaʊs", "haʊs")
+        assert lexicon.lookup("Haus") == "hˈaʊs"
+        assert lexicon.lookup_all("Tür") == ("tyːɐ",)
+        assert lexicon.lookup("Tür") == "tyːɐ"
+        assert lexicon.lookup_all("missing") == ()
+        assert lexicon.lookup("missing") is None
 
 
 def test_corrupt_runtime_blocks_are_rejected() -> None:
@@ -130,6 +166,8 @@ def test_close_is_idempotent_and_all_operations_reject_closed() -> None:
         lambda: "a" in lexicon,
         lambda: iter(lexicon),
         lambda: len(lexicon),
+        lambda: lexicon.lookup_all("a"),
+        lambda: lexicon.lookup("a"),
         lambda: lexicon.select("a"),
     )
     for operation in operations:

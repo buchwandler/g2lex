@@ -65,8 +65,8 @@ a neural G2P model, a rules engine, or another consumer-owned fallback.
 
 ```python
 def pronounce(word: str, *, lexicon, fallback):
-    value = lexicon.get(word)
-    return value if value is not None else fallback(word)
+    pronunciation = lexicon.lookup(word)
+    return pronunciation if pronunciation is not None else fallback(word)
 ```
 
 ## Python API

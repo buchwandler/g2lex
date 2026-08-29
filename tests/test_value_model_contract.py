@@ -9,7 +9,9 @@ from g2lex.value import (
     WORD_ONLY,
     TaggedValue,
     canonical_bytes,
+    first_pronunciation,
     logical_sha256,
+    pronunciation_variants,
     validate_selector_value,
     validate_value,
 )
@@ -28,6 +30,44 @@ def test_all_supported_value_shapes_validate() -> None:
     validate_selector_value(None)
     validate_selector_value("default")
     validate_selector_value(("first", "second"))
+
+
+def test_pronunciation_helpers_cover_supported_value_shapes() -> None:
+    assert pronunciation_variants("a") == ("a",)
+    assert first_pronunciation("a") == "a"
+
+    assert pronunciation_variants(("a", "b")) == ("a", "b")
+    assert first_pronunciation(("a", "b")) == "a"
+
+    assert pronunciation_variants(()) == ()
+    assert first_pronunciation(()) is None
+
+    assert pronunciation_variants(WORD_ONLY) == ()
+    assert first_pronunciation(WORD_ONLY) is None
+
+    assert pronunciation_variants(None) == ()
+    assert first_pronunciation(None) is None
+
+
+def test_pronunciation_helpers_select_tag_then_default_in_source_order() -> None:
+    value = TaggedValue(
+        (
+            ("NOUN", ("n1", "n2")),
+            ("DEFAULT", "d"),
+        )
+    )
+    assert pronunciation_variants(value, tag="NOUN") == ("n1", "n2")
+    assert first_pronunciation(value, tag="NOUN") == "n1"
+    assert pronunciation_variants(value, tag="VERB") == ("d",)
+    assert first_pronunciation(value, tag="VERB") == "d"
+
+    unresolved = TaggedValue((("NOUN", ("n1",)),))
+    assert pronunciation_variants(unresolved, tag="VERB") == ()
+    assert first_pronunciation(unresolved, tag="VERB") is None
+
+    explicit_none = TaggedValue((("NOUN", None), ("DEFAULT", "d")))
+    assert pronunciation_variants(explicit_none, tag="NOUN") == ()
+    assert first_pronunciation(explicit_none, tag="NOUN") is None
 
 
 def test_invalid_value_shapes_and_empty_tags_are_rejected() -> None:

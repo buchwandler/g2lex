@@ -20,7 +20,7 @@ def test_distribution_metadata_contract() -> None:
     assert metadata["Name"] == "g2lex"
     assert metadata["Requires-Python"] == ">=3.10"
     requirements = importlib.metadata.requires("g2lex") or []
-    assert all('extra ==' in requirement for requirement in requirements)
+    assert all("extra ==" in requirement for requirement in requirements)
     assert metadata.get_all("Provides-Extra") == ["dev", "benchmark"]
 
 

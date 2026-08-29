@@ -13,6 +13,15 @@ G2Lex records exact values: a scalar pronunciation, ordered variants, tagged
 values, selector values, or the word-only sentinel. It does not normalize words,
 interpret IPA, infer missing pronunciations, or silently discard source fields.
 
+## Exact and pronunciation lookup
+
+Mapping access is exact and lossless: `lexicon.get(word)` and `lexicon[word]`
+return the original typed value. `lexicon.lookup_all(word)` converts a
+pronunciation-capable value to an ordered tuple, while `lexicon.lookup(word)`
+returns its first pronunciation or `None`. “First” always means source order, not
+quality ranking. These convenience methods also support tagged values and their
+`DEFAULT` fallback; `WORD_ONLY` and unresolved selectors produce no pronunciation.
+
 ## Lazy loading and memory mapping
 
 Keys and record blocks are decoded on demand. Independently compressed blocks and

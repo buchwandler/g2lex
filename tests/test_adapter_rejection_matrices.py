@@ -59,7 +59,9 @@ def test_gruut_rejects_missing_table_and_malformed_fields(tmp_path: Path) -> Non
         parse_gruut_sqlite(missing)
 
     malformed = tmp_path / "malformed.sqlite"
-    _database(malformed, "CREATE TABLE word_phonemes (word TEXT, pron_order INTEGER, phonemes BLOB)")
+    _database(
+        malformed, "CREATE TABLE word_phonemes (word TEXT, pron_order INTEGER, phonemes BLOB)"
+    )
     with sqlite3.connect(malformed) as connection:
         connection.execute("INSERT INTO word_phonemes VALUES (?, ?, ?)", ("word", 1, None))
     with pytest.raises(TypeError, match="phonemes must be strings"):

@@ -21,11 +21,29 @@ from g2lex import (
 string, an ordered tuple of strings, `TaggedValue`, `WORD_ONLY`, or another
 format-specific typed value accepted by the source adapter.
 
+Exact mapping access preserves the source's typed value. Use the convenience methods
+when a pronunciation consumer needs a normalized interface:
+
+| Access         | Result                                 |
+| -------------- | -------------------------------------- |
+| `get()` / `[]` | Exact typed source value               |
+| `lookup_all()` | Ordered pronunciation tuple            |
+| `lookup()`     | First ordered pronunciation, or `None` |
+
+`lookup_all()` and `lookup()` apply optional tag selection and fall back to the
+`DEFAULT` tag. “First” means the first variant in source order, not a quality
+ranking. A `WORD_ONLY` value and an unresolved selector have no pronunciation.
+
+The same conversion is available for a raw value (including a `LayerHit.value`)
+with the root exports `pronunciation_variants(value)` and
+`first_pronunciation(value)`.
+
 ```python
 with open("lexicon.g2lex") as lexicon:
-    value = lexicon.get("word")
-    for word, pronunciation in lexicon.items():
-        print(word, pronunciation)
+    exact_value = lexicon["word"]           # typed value, unchanged
+    variants = lexicon.lookup_all("word")    # tuple for pronunciation consumers
+    first = lexicon.lookup("word")           # first source-ordered pronunciation
+    print(exact_value, variants, first)
 ```
 
 `open_bytes` is useful for an in-memory asset. `open_traversable` keeps an
