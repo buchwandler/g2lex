@@ -5,12 +5,27 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+from email.parser import Parser
 from pathlib import Path
 
 _FALLBACK = "0.1.0"
 _TAG = re.compile(
     r"^v?(?P<base>\d+\.\d+\.\d+)(?:-(?P<count>\d+)-g(?P<sha>[0-9a-f]+))?(?P<dirty>-dirty)?$"
 )
+
+def _sdist_version(root: Path) -> str | None:
+    """Return the version embedded in an extracted sdist, if present."""
+    try:
+        metadata = Parser().parsestr(
+            (root / "PKG-INFO").read_text(encoding="utf-8"),
+            headersonly=True,
+        )
+    except (OSError, UnicodeError):
+        return None
+    if metadata.get("Name") != "g2lex":
+        return None
+    value = metadata.get("Version")
+    return value.strip() if value and value.strip() else None
 
 
 def get_version() -> str:
@@ -36,10 +51,10 @@ def get_version() -> str:
             timeout=2,
         ).strip()
     except (OSError, subprocess.SubprocessError):
-        return _FALLBACK
+        text = ""
     match = _TAG.match(text)
     if not match:
-        return _FALLBACK
+        return _sdist_version(root) or _FALLBACK
     base = match.group("base")
     count = int(match.group("count") or 0)
     sha = match.group("sha")

@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Check out release
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -30,7 +32,29 @@ jobs:
         run: python -m pip install --upgrade pip build twine
 
       - name: Build package
-        run: python -m build
+        run: |
+          rm -rf dist build g2lex.egg-info
+          python -m build
 
+      - name: Validate release artifacts
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python -m twine check dist/*
+          python - <<'PY'
+          import os
+          import re
+          import subprocess
+          import sys
+
+          tag = os.environ["RELEASE_TAG"]
+          if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
+              raise SystemExit(f"release tag must be vX.Y.Z, got {tag!r}")
+          expected = tag[1:]
+          subprocess.run(
+              [sys.executable, "scripts/check_dist_versions.py", "--expected-version", expected],
+              check=True,
+          )
+          PY
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@v1.14.2

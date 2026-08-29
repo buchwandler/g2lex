@@ -183,6 +183,27 @@ def test_version_resolution(monkeypatch: pytest.MonkeyPatch) -> None:
     assert version.get_version() == "0.1.0"
 
 
+def test_version_resolution_from_sdist_metadata(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import g2lex._version as version
+
+    (tmp_path / "PKG-INFO").write_text(
+        "Metadata-Version: 2.4\nName: g2lex\nVersion: 1.2.3\n",
+        encoding="utf-8",
+    )
+    assert version._sdist_version(tmp_path) == "1.2.3"
+
+    monkeypatch.setattr(version, "_sdist_version", lambda root: "1.2.3")
+
+    def fail(*args, **kwargs):
+        raise OSError
+
+    monkeypatch.setattr(version.subprocess, "check_output", fail)
+    assert version.get_version() == "1.2.3"
+
+
+
 def test_training_models_and_alignment() -> None:
     assert align("ab", "xy", max_output_chunk_length=1) == (("a", "x"), ("b", "y"))
     with pytest.raises(ValueError, match="non-negative"):
