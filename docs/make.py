@@ -10,7 +10,8 @@ Options:
     clean   - clean the build directory
     html    - build HTML documentation
     dirhtml - build HTML documentation with directory structure
-    all     - build all documentation formats
+    json    - build serialized JSON documentation
+    all     - build all documentation formats, including JSON
     help    - show help message
 """
 
@@ -22,8 +23,6 @@ import sys
 
 def main():
     """Run the script."""
-    sphinx_build = "sphinx-build"
-
     # Determine if we're being run from docs/ or from project root
     script_dir = os.path.dirname(os.path.abspath(__file__))
     source_dir = script_dir
@@ -52,12 +51,12 @@ def main():
         "html",
         "dirhtml",
         "latex",
+        "json",
         "latexpdf",
         "text",
         "man",
         "changes",
         "linkcheck",
-        "doctest",
         "all",
     }
 
@@ -68,13 +67,33 @@ def main():
 
     if target == "all":
         # Build all formats
-        for fmt in ["html", "dirhtml", "latex"]:
-            cmd = [sphinx_build, "-b", fmt, source_dir, os.path.join(build_dir, fmt)]
+        for fmt in ["html", "dirhtml", "latex", "json"]:
+            cmd = [
+                sys.executable,
+                "-m",
+                "sphinx",
+                "-W",
+                "--keep-going",
+                "-b",
+                fmt,
+                source_dir,
+                os.path.join(build_dir, fmt),
+            ]
             print(f"Building {fmt} documentation...")
             subprocess.run(cmd, check=True)
     else:
         # Build specific format
-        cmd = [sphinx_build, "-b", target, source_dir, os.path.join(build_dir, target)]
+        cmd = [
+            sys.executable,
+            "-m",
+            "sphinx",
+            "-W",
+            "--keep-going",
+            "-b",
+            target,
+            source_dir,
+            os.path.join(build_dir, target),
+        ]
         print(f"Building {target} documentation...")
         subprocess.run(cmd, check=True)
 

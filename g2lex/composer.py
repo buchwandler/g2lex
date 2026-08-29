@@ -7,15 +7,14 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .linkers import LinkerTable
+from .mappings import OverlayMapping
 from .prefix_index import LiteralPrefixIndex, MutableLiteralPrefixIndex
 from .rules import RuleSet
-from .runtime import OverlayMapping
+from .search import SearchLimitError, segmentation_rank
 
 PrefixIndex = LiteralPrefixIndex | MutableLiteralPrefixIndex
 
 
-class SearchLimitError(RuntimeError):
-    """The bounded composer exceeded its configured state budget."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,12 +67,6 @@ def top_k_segmentations(
     return visit(0, 0)
 
 
-def segmentation_rank(
-    components: tuple[str, ...],
-) -> tuple[int, tuple[int, ...], tuple[str, ...]]:
-    """Historical ranking: fewer components, longer-leftmost, lexical tie break."""
-
-    return (-len(components), tuple(map(len, components)), tuple(reversed(components)))
 
 
 def best_segmentation(

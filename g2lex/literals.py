@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from itertools import pairwise
 from typing import Any
 
-from .model import LiteralLexicon, LiteralStore, PronunciationTuple
+from .model import LiteralLexicon, LiteralStore
+from .types import PronunciationTuple
 
 
 def _encode_variants(values: PronunciationTuple) -> bytes:

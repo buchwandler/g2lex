@@ -8,8 +8,8 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any, cast
 
-from .model import PronunciationTuple
 from .runtime import ReconstructionCandidate
+from .types import PronunciationTuple
 
 
 def _resolve(context: Any, spelling: str) -> PronunciationTuple | None:

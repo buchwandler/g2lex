@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Protocol
 
 from .membership import ExactMembership
+from .types import PronunciationTuple
 from .value import LexiconValue, logical_sha256, validate_value
-
-PronunciationTuple = tuple[str, ...]
 
 
 class LiteralStore(Protocol):
@@ -63,6 +62,31 @@ class SourceInfo:
     generator: str | None = None
     parser_id: str | None = None
 
+
+    def __post_init__(self) -> None:
+        """Normalize legacy and canonical provenance names in memory."""
+        source_sha256 = self.source_sha256 or (self.sha256 or None)
+        source_size_bytes = (
+            self.source_size_bytes if self.source_size_bytes is not None else self.size_bytes
+        )
+        source_format = self.source_format or (self.format or None)
+        object.__setattr__(self, "source_sha256", source_sha256)
+        object.__setattr__(self, "sha256", source_sha256 or "")
+        object.__setattr__(self, "source_size_bytes", source_size_bytes)
+        object.__setattr__(self, "size_bytes", source_size_bytes)
+        object.__setattr__(self, "source_format", source_format)
+        object.__setattr__(self, "format", source_format or "")
+
+    def canonical_dict(self) -> dict[str, object]:
+        """Return the modern provenance shape used by serialized manifests."""
+        value = asdict(self)
+        value.pop("sha256", None)
+        value.pop("size_bytes", None)
+        value.pop("format", None)
+        value["source_sha256"] = self.source_sha256
+        value["source_size_bytes"] = self.source_size_bytes
+        value["source_format"] = self.source_format
+        return value
 
 @dataclass(slots=True)
 class LexiconData:

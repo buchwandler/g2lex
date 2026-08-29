@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from itertools import product
 from typing import Any
 
+from .rule_types import RuleStats
+
 
 @dataclass(slots=True)
 class FinalComponentStressDemotionRule:
@@ -13,7 +15,7 @@ class FinalComponentStressDemotionRule:
 
     rule_id: str = "C2"
     version: str = "2"
-    stats: Any = field(default_factory=lambda: _stats())
+    stats: RuleStats = field(default_factory=RuleStats)
 
     def applies(
         self, word: str, components: tuple[str, ...], variants: tuple[tuple[str, ...], ...]
@@ -51,7 +53,7 @@ class BoundaryStressClassRule:
 
     rule_id: str = "C3"
     version: str = "2"
-    stats: Any = field(default_factory=lambda: _stats())
+    stats: RuleStats = field(default_factory=RuleStats)
 
     def applies(
         self, word: str, components: tuple[str, ...], variants: tuple[tuple[str, ...], ...]
@@ -81,11 +83,6 @@ class BoundaryStressClassRule:
         }
 
 
-def _stats() -> Any:
-    # Imported lazily to keep this module usable as a rule definition module.
-    from .rules import RuleStats
-
-    return RuleStats()
 
 
 def diagnostic_boundary_rules() -> tuple[Any, ...]:

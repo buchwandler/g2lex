@@ -36,6 +36,8 @@ def parse_tsv_bytes(
         word, pronunciation = fields
         if not word:
             raise ValueError(f"{label}:{line_number}: empty spelling")
+        if not pronunciation:
+            raise ValueError(f"{label}:{line_number}: empty pronunciation")
         values.setdefault(word, []).append(pronunciation)
     entries = {word: tuple(items) for word, items in values.items()}
     return result(entries, path=path, data=data, fmt="tsv", source_id=source_id, physical_rows=rows)

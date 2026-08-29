@@ -6,6 +6,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from .search import segmentation_rank
+
 
 @dataclass(frozen=True, slots=True)
 class SegmentationScorer:
@@ -32,8 +34,6 @@ class SegmentationScorer:
     def key(
         self, components: tuple[str, ...]
     ) -> tuple[int, tuple[int, tuple[int, ...], tuple[str, ...]]]:
-        from .composer import segmentation_rank
-
         return self.score(components), segmentation_rank(components)
 
     def as_dict(self) -> dict[str, Any]:

@@ -7,12 +7,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .backends import build_codec, build_literal_store, build_membership_backend
-from .composer import ImplicitComposer, SearchLimitError
+from .composer import ImplicitComposer
 from .linkers import LinkerTable
 from .model import CandidateMetrics, ImplicitLexicon, LexiconData
 from .prefix_index import MutableLiteralPrefixIndex
 from .resolver import ComponentResolver, ResolveContext
 from .rules import RuleSet
+from .search import SearchLimitError
 
 
 @dataclass(slots=True)

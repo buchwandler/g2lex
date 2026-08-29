@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .composer import SearchLimitError, segmentation_rank
+from .search import SearchLimitError, segmentation_rank
 
 
 @dataclass(slots=True)
@@ -27,9 +27,6 @@ class ComponentResolver:
     max_depth: int = 4
     max_states: int = 100_000
 
-    def __post_init__(self) -> None:
-        # Prefix traversal is delegated to the exact membership backend.
-        pass
 
     def resolve(self, word: str, context: ResolveContext | None = None) -> tuple[str, ...] | None:
         context = context or ResolveContext()

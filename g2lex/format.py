@@ -7,7 +7,6 @@ import json
 import struct
 import zlib
 from collections.abc import Mapping
-from dataclasses import asdict
 from itertools import pairwise
 
 from .key_index import FrontCodedKeyIndex
@@ -60,13 +59,7 @@ def _align(position: int, alignment: int = 8) -> int:
 
 
 def _source_dict(source: SourceInfo) -> dict[str, object]:
-    value = asdict(source)
-    if value.get("source_sha256") is None:
-        value["source_sha256"] = value.get("sha256") or None
-    if value.get("source_size_bytes") is None:
-        value["source_size_bytes"] = value.get("size_bytes")
-    if value.get("source_format") is None:
-        value["source_format"] = value.get("format") or None
+    value = source.canonical_dict()
     if value.get("path"):
         value["path"] = str(value["path"])
     return value

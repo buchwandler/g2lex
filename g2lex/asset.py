@@ -5,11 +5,11 @@ from __future__ import annotations
 import io
 import json
 import zipfile
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 from .composer import ImplicitComposer
+from .lexicon import Lexicon
 from .linkers import LinkerTable
 from .membership import MembershipIndex
 from .model import ImplicitLexicon, LiteralLexicon, SourceInfo
@@ -23,6 +23,8 @@ LEGACY_ASSET_FORMATS = {(2, "lexcompact.asset.v2"), (3, "lexcompact.asset.v3")}
 _FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 
 
+LoadedAsset = Lexicon | ImplicitLexicon
+
 def _json_bytes(value: object) -> bytes:
     return (
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
@@ -30,7 +32,7 @@ def _json_bytes(value: object) -> bytes:
 
 
 def _source_dict(source: SourceInfo) -> dict[str, Any]:
-    value = asdict(source)
+    value = source.canonical_dict()
     value["path"] = Path(source.path).name if source.path else None
     return value
 
@@ -97,11 +99,11 @@ def save(path: str | Path, asset: ImplicitLexicon) -> None:
     Path(path).write_bytes(dumps(asset))
 
 
-def loads(data: bytes) -> ImplicitLexicon:
+def loads(data: bytes) -> LoadedAsset:
     if data[:4] == b"G2LX":
         from .lexicon import open_bytes
 
-        return open_bytes(data)  # type: ignore[return-value]
+        return open_bytes(data)
     if data[:4] == b"LXC4":
         from .asset_v4 import loads as loads_v4
 
@@ -158,14 +160,14 @@ def loads(data: bytes) -> ImplicitLexicon:
         return candidate
 
 
-def load(path: str | Path) -> ImplicitLexicon:
+def load(path: str | Path) -> LoadedAsset:
     path = Path(path)
     with path.open("rb") as handle:
         magic = handle.read(4)
         if magic == b"G2LX":
             from .lexicon import open_lexicon
 
-            return open_lexicon(path)  # type: ignore[return-value]
+            return open_lexicon(path)
         if magic == b"LXC4":
             from .asset_v4 import load as load_v4
 
@@ -173,13 +175,13 @@ def load(path: str | Path) -> ImplicitLexicon:
     return loads(path.read_bytes())
 
 
-def load_traversable(resource: Any) -> ImplicitLexicon:
+def load_traversable(resource: Any) -> LoadedAsset:
     """Load from an importlib.resources Traversable or any object with read_bytes()."""
     data = resource.read_bytes()
     if data[:4] == b"G2LX":
         from .lexicon import open_traversable
 
-        return open_traversable(resource)  # type: ignore[return-value]
+        return open_traversable(resource)
     return loads(data)
 
 

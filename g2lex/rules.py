@@ -7,14 +7,8 @@ from dataclasses import dataclass, field
 from itertools import product
 from typing import Any, Protocol
 
+from .rule_types import RuleStats
 from .selector import Candidate, RuleSelector
-
-
-@dataclass(slots=True)
-class RuleStats:
-    usage_count: int = 0
-    exact_success_count: int = 0
-    mismatch_count: int = 0
 
 
 class CompositionRule(Protocol):

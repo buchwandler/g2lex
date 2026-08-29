@@ -263,3 +263,20 @@ def test_corrupt_g2lex_is_rejected() -> None:
     data[0:4] = b"bad!"
     with pytest.raises(ValueError):
         open_bytes(data)
+
+
+def test_source_info_normalizes_legacy_fields_to_canonical_manifest_shape() -> None:
+    source = SourceInfo(sha256="abc", format="tsv", size_bytes=12)
+
+    assert source.source_sha256 == "abc"
+    assert source.source_format == "tsv"
+    assert source.source_size_bytes == 12
+    assert source.sha256 == "abc"
+    assert source.format == "tsv"
+    assert source.size_bytes == 12
+
+    canonical = source.canonical_dict()
+    assert canonical["source_sha256"] == "abc"
+    assert canonical["source_format"] == "tsv"
+    assert canonical["source_size_bytes"] == 12
+    assert not {"sha256", "format", "size_bytes"}.intersection(canonical)

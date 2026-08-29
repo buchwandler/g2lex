@@ -82,3 +82,13 @@ def test_cli_entrypoint_version(capsys: pytest.CaptureFixture[str]) -> None:
         main(["--version"])
     assert version.value.code == 0
     assert "g2lex" in capsys.readouterr().out
+
+
+def test_cli_stable_verify_rejects_reduction_asset(tmp_path: Path) -> None:
+    source = tmp_path / "source.tsv"
+    source.write_text("word\tpronunciation\n", encoding="utf-8")
+    asset = tmp_path / "reduced.lxc"
+    asset.write_bytes(b"LXC!not-a-g2lex-asset")
+
+    with pytest.raises(ValueError, match="experimental verify-reduced"):
+        main(["verify", str(source), str(asset), "--format", "tsv"])

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -41,10 +40,9 @@ def _json(value: object) -> bytes:
 
 
 def _source_dict(source: SourceInfo) -> dict[str, Any]:
-    result = asdict(source)
+    result = source.canonical_dict()
     result["path"] = Path(source.path).name if source.path else None
     return result
-
 
 def manifest_dict(asset: ImplicitLexicon) -> dict[str, Any]:
     metrics = asset.metrics()

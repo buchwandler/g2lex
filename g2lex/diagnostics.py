@@ -14,8 +14,9 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any, cast
 
-from .composer import SearchLimitError, top_k_segmentations
+from .composer import top_k_segmentations
 from .model import ImplicitLexicon, LexiconData
+from .search import SearchLimitError
 
 
 def _rule_candidates(

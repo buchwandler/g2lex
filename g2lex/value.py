@@ -43,6 +43,8 @@ class TaggedValue(Mapping[str, SelectorValue]):
             tag, value = pair
             if not isinstance(tag, str):
                 raise TypeError("tag names must be strings")
+            if not tag:
+                raise ValueError("tag names must not be empty")
             if tag in seen:
                 raise ValueError(f"duplicate selector tag: {tag!r}")
             seen.add(tag)
