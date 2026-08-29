@@ -13,6 +13,15 @@
 ### Changed
 
 - Changed the public package and CLI name to g2lex, updating asset identities, metadata, docs, scripts, and tests
+- Hardened layered lexicon iteration, provenance lookup, and lifecycle ownership
+
+### Fixed
+
+- Rejected metadata collisions with structural binary manifest fields
+
+### Deprecated
+
+- Deprecated Kokoro compatibility caching in favor of consumer-owned generic APIs
 
 ### Quality
 

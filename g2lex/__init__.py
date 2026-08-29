@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ._version import __version__
 from .io import LexiconFormatError, parse_typed_bytes, read_typed_lexicon
-from .layers import CaseAliasMapping, LayeredLexicon, LexiconLayer
+from .layers import CaseAliasMapping, LayeredLexicon, LayerHit, LexiconLayer
 from .lexicon import Lexicon, LexiconRecord, open, open_bytes, open_traversable
 from .model import SourceInfo, TypedLexiconData
 from .operations import export_file, inspect_file, pack_file, verify_file
@@ -14,6 +14,7 @@ from .verify_exact import compare
 __all__ = [
     "WORD_ONLY",
     "CaseAliasMapping",
+    "LayerHit",
     "LayeredLexicon",
     "Lexicon",
     "LexiconFormatError",

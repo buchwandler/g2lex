@@ -87,6 +87,93 @@ def test_aliases_layers_and_comparison() -> None:
     }
 
 
+def test_layered_alias_iteration_is_unique() -> None:
+    aliases = CaseAliasMapping({"apple": "a", "banana": "b"})
+    layered = LayeredLexicon(
+        [
+            LexiconLayer("aliases", aliases, {}),
+            LexiconLayer("other", {"Apple": "explicit", "blueberry": "bb"}, {}),
+        ]
+    )
+
+    assert list(aliases) == ["apple", "banana", "Apple", "Banana"]
+    assert list(layered) == ["apple", "banana", "Apple", "Banana", "blueberry"]
+    assert len(layered) == len(set(layered)) == 5
+    assert dict(layered) == {
+        "apple": "a",
+        "banana": "b",
+        "Apple": "a",
+        "Banana": "b",
+        "blueberry": "bb",
+    }
+
+
+def test_layered_explicit_key_in_higher_layer_wins() -> None:
+    layered = LayeredLexicon(
+        [
+            LexiconLayer("explicit", {"Apple": "explicit"}, {"rating": 4}),
+            LexiconLayer("aliases", CaseAliasMapping({"apple": "alias"}), {"rating": 3}),
+        ]
+    )
+
+    hit = layered.get_hit("Apple")
+    assert hit is not None
+    assert hit.value == "explicit"
+    assert hit.name == "explicit"
+    assert hit.index == 0
+    assert hit.metadata == {"rating": 4}
+    assert layered["Apple"] == "explicit"
+
+
+def test_layered_hit_preserves_false_like_value() -> None:
+    metadata = {"rating": 4}
+    layered = LayeredLexicon(
+        [
+            LexiconLayer("first", {"x": None}, metadata),
+            LexiconLayer("second", {"x": "fallback"}, {"rating": 3}),
+        ]
+    )
+
+    hit = layered.get_hit("x")
+    assert hit is not None
+    assert hit.value is None
+    assert hit.name == "first"
+    assert hit.index == 0
+    assert hit.metadata is metadata
+    assert layered.get("x", "default") is None
+
+
+def test_layered_close_is_idempotent_and_context_managed() -> None:
+    class CloseOnceMapping(dict[str, str]):
+        def __init__(self, *args: object, **kwargs: str) -> None:
+            super().__init__(*args, **kwargs)
+            self.close_count = 0
+
+        def close(self) -> None:
+            self.close_count += 1
+            if self.close_count > 1:
+                raise AssertionError("mapping closed more than once")
+
+    mapping = CloseOnceMapping(x="value")
+    layered = LayeredLexicon(
+        [LexiconLayer("first", mapping, {}), LexiconLayer("duplicate", mapping, {})]
+    )
+    layered.close()
+    layered.close()
+    assert mapping.close_count == 1
+    with pytest.raises(ValueError, match="closed"):
+        layered.get("x")
+    with pytest.raises(ValueError, match="closed"):
+        list(layered)
+    with pytest.raises(ValueError, match="closed"):
+        len(layered)
+
+    context_mapping = CloseOnceMapping(y="value")
+    with LayeredLexicon([LexiconLayer("context", context_mapping, {})]) as context_layered:
+        assert context_layered["y"] == "value"
+    assert context_mapping.close_count == 1
+
+
 def test_file_api_self_verification_and_export(tmp_path: Path) -> None:
     source = tmp_path / "source.json"
     source.write_text(
@@ -100,6 +187,49 @@ def test_file_api_self_verification_and_export(tmp_path: Path) -> None:
     export_file(asset, exported, format="jsonl")
     assert verify_file(source, asset, input_format="kokoro-json")["lossless"]
     assert parse_jsonl_bytes(exported.read_bytes()).entries["live"]["VERB"] == "v"
+
+
+_RESERVED_MANIFEST_KEYS = (
+    "format",
+    "schema",
+    "entry_count",
+    "value_model",
+    "key_index",
+    "record_codec",
+    "record_block_entries",
+    "key_block_entries",
+    "source",
+    "logical_sha256",
+    "build",
+)
+
+
+@pytest.mark.parametrize("key", _RESERVED_MANIFEST_KEYS)
+@pytest.mark.parametrize("metadata_source", ("explicit", "inherited"))
+def test_reserved_manifest_metadata_is_rejected(key: str, metadata_source: str) -> None:
+    if metadata_source == "explicit":
+        data: TypedLexiconData | dict[str, object] = {"a": "x"}
+        kwargs = {"metadata": {key: "collision"}}
+    else:
+        data = TypedLexiconData({"a": "x"}, metadata={key: "collision"})
+        kwargs = {}
+
+    with pytest.raises(ValueError, match=key):
+        pack_typed(data, **kwargs)  # type: ignore[arg-type]
+
+
+def test_custom_manifest_metadata_round_trips_deterministically() -> None:
+    metadata = {"consumer": {"lexicon_id": "en-us:gold", "rating": 4}, "custom": "value"}
+    first = pack_typed({"a": "x"}, metadata=metadata)
+    second = pack_typed({"a": "x"}, metadata=metadata)
+    assert first == second
+
+    lexicon = open_bytes(first)
+    try:
+        assert lexicon.metadata["consumer"] == metadata["consumer"]
+        assert lexicon.metadata["custom"] == "value"
+    finally:
+        lexicon.close()
 
 
 def test_source_metadata_is_preserved_and_deterministic() -> None:

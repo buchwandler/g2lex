@@ -17,6 +17,31 @@ from .value import LexiconValue, logical_sha256
 
 MAGIC = b"G2LX"
 SCHEMA = 1
+
+_RESERVED_MANIFEST_KEYS = frozenset(
+    {
+        "format",
+        "schema",
+        "entry_count",
+        "value_model",
+        "key_index",
+        "record_codec",
+        "record_block_entries",
+        "key_block_entries",
+        "source",
+        "logical_sha256",
+        "build",
+    }
+)
+
+
+def _validate_manifest_metadata(metadata: Mapping[str, object], label: str) -> None:
+    conflicts = sorted(_RESERVED_MANIFEST_KEYS.intersection(metadata))
+    if conflicts:
+        names = ", ".join(repr(key) for key in conflicts)
+        raise ValueError(f"{label} metadata contains reserved manifest keys: {names}")
+
+
 HEADER = struct.Struct(">4sIIIIQQ")
 TOC_PREFIX = struct.Struct(">I")
 TOC_ENTRY = struct.Struct(">QQQIB3x32s")
@@ -138,6 +163,9 @@ def pack_typed(
         entries = dict(data)
         inherited = {}
         source = source or SourceInfo()
+    _validate_manifest_metadata(inherited, "inherited")
+    if metadata is not None:
+        _validate_manifest_metadata(metadata, "explicit")
     if record_block_entries <= 0 or key_block_entries <= 0:
         raise ValueError("block sizes must be positive")
     ordered_words = sorted(entries, key=lambda word: word.encode("utf-8"))

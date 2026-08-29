@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import heapq
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
+from types import TracebackType
 from typing import Any, cast
 
 from .value import LexiconValue
@@ -89,6 +89,16 @@ _MISSING = object()
 
 
 @dataclass(frozen=True, slots=True)
+class LayerHit:
+    """The value and provenance of the first layer containing a key."""
+
+    value: LexiconValue
+    name: str
+    metadata: Mapping[str, object]
+    index: int
+
+
+@dataclass(frozen=True, slots=True)
 class LexiconLayer:
     name: str
     lexicon: Mapping[str, LexiconValue]
@@ -96,51 +106,78 @@ class LexiconLayer:
 
 
 class LayeredLexicon(Mapping[str, LexiconValue]):
-    """Resolve layers by raw record presence, never by selected values."""
+    """Layered mapping with first-layer precedence and deterministic iteration.
+
+    Composite lookups and iteration raise ``ValueError`` after :meth:`close`,
+    matching the lifecycle behavior of :class:`g2lex.Lexicon`.
+    """
 
     def __init__(self, layers: tuple[LexiconLayer, ...] | list[LexiconLayer]):
         self.layers = tuple(layers)
+        self._closed = False
 
-    def get(self, word: str, default: Any = None) -> LexiconValue | Any:
-        for layer in self.layers:
+    def _ensure_open(self) -> None:
+        if self._closed:
+            raise ValueError("lexicon is closed")
+
+    def get_hit(self, word: str) -> LayerHit | None:
+        """Return the first layer containing ``word``, including false-like values."""
+        self._ensure_open()
+        for index, layer in enumerate(self.layers):
             value = layer.lexicon.get(word, _MISSING)
             if value is not _MISSING:
-                return value
-        return default
+                return LayerHit(value, layer.name, layer.metadata, index)
+        return None
+
+    def get(self, word: str, default: Any = None) -> LexiconValue | Any:
+        hit = self.get_hit(word)
+        return default if hit is None else hit.value
 
     def __getitem__(self, word: str) -> LexiconValue:
-        value = self.get(word, _MISSING)
-        if value is _MISSING:
+        hit = self.get_hit(word)
+        if hit is None:
             raise KeyError(word)
-        return value
+        return hit.value
 
     def __contains__(self, word: object) -> bool:
+        self._ensure_open()
         return isinstance(word, str) and any(word in layer.lexicon for layer in self.layers)
 
     def __iter__(self) -> Iterator[str]:
-        iterators = [iter(layer.lexicon) for layer in self.layers]
-        heap: list[tuple[str, int]] = []
-        for index, iterator in enumerate(iterators):
-            try:
-                heapq.heappush(heap, (next(iterator), index))
-            except StopIteration:
-                pass
-        previous = _MISSING
-        while heap:
-            word, index = heapq.heappop(heap)
-            if word != previous:
-                yield word
-                previous = word
-            try:
-                heapq.heappush(heap, (next(iterators[index]), index))
-            except StopIteration:
-                pass
+        self._ensure_open()
+        seen: set[str] = set()
+        for layer in self.layers:
+            for word in layer.lexicon:
+                if word not in seen:
+                    seen.add(word)
+                    yield word
 
     def __len__(self) -> int:
+        self._ensure_open()
         return sum(1 for _ in self)
 
     def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        closed: set[int] = set()
         for layer in self.layers:
+            mapping_id = id(layer.lexicon)
+            if mapping_id in closed:
+                continue
             close = getattr(layer.lexicon, "close", None)
             if close is not None:
                 close()
+            closed.add(mapping_id)
+
+    def __enter__(self) -> LayeredLexicon:  # noqa: PYI034
+        self._ensure_open()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()

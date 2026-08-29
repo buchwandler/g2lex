@@ -1,4 +1,9 @@
-"""Compatibility helpers for consumers such as KokoroG2P."""
+"""Deprecated compatibility helpers for consumers such as KokoroG2P.
+
+New consumers should use :func:`g2lex.open_traversable` and
+:class:`g2lex.LayeredLexicon` directly so resource and policy ownership remains
+with the consumer.
+"""
 
 from __future__ import annotations
 
@@ -19,34 +24,26 @@ LEXICON_PROFILES = {
     "fr": {"default": ("fr_gold",), "gold": ("fr_gold",)},
 }
 
-_CACHE: dict[object, Mapping[str, LexiconValue]] = {}
 _CacheInfo = namedtuple("_CacheInfo", "hits misses maxsize currsize")
 _CACHE_HITS = 0
 _CACHE_MISSES = 0
 
 
 def open_kokoro_lexicon(resource: Any, *, aliases: bool = False, cache_key: object = None):
-    """Open one packaged or filesystem G2Lex v1 lexicon, optionally with aliases."""
+    """Open one lexicon without retaining a caller-owned live handle.
 
-    global _CACHE_HITS, _CACHE_MISSES
-    key = cache_key if cache_key is not None else resource
-    if key in _CACHE:
-        _CACHE_HITS += 1
-        return _CACHE[key]
+    Deprecated: use :func:`g2lex.open_traversable` or :func:`g2lex.open` and
+    manage the returned resource directly. ``cache_key`` is accepted for
+    source compatibility but no live-object cache is maintained.
+    """
+    del cache_key
+    global _CACHE_MISSES
     _CACHE_MISSES += 1
     if isinstance(resource, (str, Path)):
         lexicon = open_lexicon(resource)
     else:
         lexicon = open_traversable(resource)
-    result: Mapping[str, LexiconValue] = CaseAliasMapping(lexicon) if aliases else lexicon
-    _CACHE[key] = result
-    if len(_CACHE) > 4:
-        oldest = next(iter(_CACHE))
-        evicted = _CACHE.pop(oldest)
-        close = getattr(evicted, "close", None)
-        if close is not None:
-            close()
-    return result
+    return CaseAliasMapping(lexicon) if aliases else lexicon
 
 
 def layer_kokoro_lexica(
@@ -55,8 +52,11 @@ def layer_kokoro_lexica(
     *,
     aliases: bool = False,
 ) -> LayeredLexicon:
-    """Create explicit raw-record gold then silver precedence."""
+    """Create explicit raw-record gold then silver precedence.
 
+    Deprecated compatibility helper; new consumers should construct layers
+    directly with :class:`g2lex.LexiconLayer` and :class:`g2lex.LayeredLexicon`.
+    """
     layers = []
     for name, mapping in (("gold", gold), ("silver", silver)):
         if mapping is not None:
@@ -65,20 +65,14 @@ def layer_kokoro_lexica(
 
 
 def clear_lexicon_cache() -> None:
+    """Reset compatibility cache counters; no live handles are retained."""
     global _CACHE_HITS, _CACHE_MISSES
-    values = tuple(_CACHE.values())
-    _CACHE.clear()
     _CACHE_HITS = _CACHE_MISSES = 0
-    closed: set[int] = set()
-    for mapping in values:
-        close = getattr(mapping, "close", None)
-        if close is not None and id(mapping) not in closed:
-            close()
-            closed.add(id(mapping))
 
 
 def lexicon_cache_info():
-    return _CacheInfo(_CACHE_HITS, _CACHE_MISSES, 4, len(_CACHE))
+    """Report the disabled compatibility cache state."""
+    return _CacheInfo(_CACHE_HITS, _CACHE_MISSES, 0, 0)
 
 
 __all__ = [

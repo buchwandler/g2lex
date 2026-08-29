@@ -77,6 +77,7 @@ interfaces:
 ```python
 from g2lex import (
     CaseAliasMapping,
+    LayerHit,
     LayeredLexicon,
     LexiconLayer,
     TaggedValue,
@@ -108,6 +109,15 @@ lexicon = LayeredLexicon(
 )
 ```
 
+`LayeredLexicon.get_hit(word)` returns a `LayerHit` with the selected value, layer
+name, metadata, and zero-based layer index. Resolution is based on raw key presence,
+so `None` and other false-like values intentionally win and do not fall through.
+Composite iteration yields unique keys in configured layer order and accepts arbitrary
+mappings; it does not promise globally sorted output.
+
+`LayeredLexicon` owns its child mappings. It can be used as a context manager, and
+`close()` is idempotent. Lookup and iteration after close raise `ValueError`, matching
+`Lexicon`.
 For package resources, retain the resource lifetime through the lexicon:
 
 ```python
@@ -118,6 +128,10 @@ resource = files(my_package.data) / "de_gold.g2lex"
 with g2lex.open_traversable(resource) as lexicon:
     pronunciation = lexicon.get("haus")
 ```
+
+The `g2lex.kokoro` module is retained only as a deprecated compatibility helper. It
+does not retain live lexicon handles or own consumer profiles. New consumers should
+open resources with the generic APIs and construct their own `LexiconLayer` stack.
 
 ## Source adapters
 

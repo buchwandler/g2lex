@@ -298,12 +298,17 @@ def test_kokoro_cache_and_diagnostics_artifacts(tmp_path: Path) -> None:
     path.write_bytes(pack_typed({"word": "w"}))
     clear_lexicon_cache()
     first = open_kokoro_lexicon(path, cache_key="x")
-    assert open_kokoro_lexicon(path, cache_key="x") is first
-    assert lexicon_cache_info().hits == 1
+    second = open_kokoro_lexicon(path, cache_key="x")
+    assert second is not first
+    assert first["word"] == "w"
+    assert second["word"] == "w"
+    assert lexicon_cache_info().hits == 0
+    assert lexicon_cache_info().misses == 2
+    first.close()
+    assert second["word"] == "w"
+    second.close()
     layered = layer_kokoro_lexica({"word": "gold"}, {"other": "silver"}, aliases=True)
     assert layered["word"] == "gold"
-    clear_lexicon_cache()
-    first.close()
 
 
 def test_io_writers_and_format_dispatch(tmp_path: Path) -> None:
