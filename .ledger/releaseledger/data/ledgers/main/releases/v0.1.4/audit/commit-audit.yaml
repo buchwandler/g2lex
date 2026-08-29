@@ -1,0 +1,180 @@
+schema_version: 1
+object_type: commit_audit_sheet
+versioning:
+  schema_version: 1
+  revision: 3
+release_version: v0.1.4
+git_base_ref: v0.1.0
+git_base_sha: 32183e4b2b6a8c0a5c536942df3f9be2e2da3c27
+git_head_ref: HEAD
+git_head_sha: 0f218b748072198a37827c5df02ee6c6b7ba59ca
+git_range: 32183e4b2b6a8c0a5c536942df3f9be2e2da3c27..0f218b748072198a37827c5df02ee6c6b7ba59ca
+commit_count: 4
+rows:
+  - sha: cf5f726f502476dcb6e968c13e43710975370350
+    source_ref: git:cf5f726f502476dcb6e968c13e43710975370350
+    short_sha: cf5f726
+    changed_paths:
+      - README.md
+    stats:
+      files_changed: 0
+      insertions: 3
+      deletions: 0
+    inspected: true
+    inspected_paths:
+      - README.md
+    observed_behavior:
+      Added PyPI version, supported Python version, and download badges
+      to the project README
+    public_impact: docs
+    decision: accepted
+    evidence_subject: "doc: batches"
+    target_entry_key: docs-badges
+    target_entry_id: entry-0001
+    notes: README-only documentation improvement; no runtime behavior changed
+  - sha: c758669a1fa5f6151cee2cb0eec0576d873c3f29
+    source_ref: git:c758669a1fa5f6151cee2cb0eec0576d873c3f29
+    short_sha: c758669
+    changed_paths:
+      - .github/workflows/python-publish.yml
+    stats:
+      files_changed: 0
+      insertions: 0
+      deletions: 19
+    inspected: true
+    inspected_paths:
+      - .github/workflows/python-publish.yml
+    observed_behavior:
+      Removed hard-coded 0.1.0 artifact validation from the PyPI publishing
+      workflow
+    public_impact: internal
+    decision: internal
+    evidence_subject: "chore: ci"
+    target_entry_key: ci-maintenance
+    target_entry_id: entry-0002
+    notes:
+      Release automation maintenance; intentionally excluded from public release
+      notes
+  - sha: a1678d61d6a33136da04d31fa98a6460998552e4
+    source_ref: git:a1678d61d6a33136da04d31fa98a6460998552e4
+    short_sha: a1678d6
+    changed_paths:
+      - g2lex/adapters/common.py
+      - g2lex/adapters/gruut_sqlite.py
+      - g2lex/adapters/jsonl.py
+      - g2lex/adapters/pls.py
+      - g2lex/adapters/tsv.py
+      - g2lex/adapters/words.py
+      - g2lex/asset.py
+      - g2lex/asset_v4.py
+      - g2lex/boundary_rules.py
+      - g2lex/builder.py
+      - g2lex/cli.py
+      - g2lex/composer.py
+      - g2lex/container.py
+      - g2lex/diagnostics.py
+      - g2lex/format.py
+      - g2lex/g2p.py
+      - g2lex/graphone.py
+      - g2lex/kokoro.py
+      - g2lex/layers.py
+      - g2lex/lexicon.py
+      - g2lex/literals.py
+      - g2lex/membership.py
+      - g2lex/model.py
+      - g2lex/neural.py
+      - g2lex/operations.py
+      - g2lex/reconstructors.py
+      - g2lex/reports.py
+      - g2lex/resolver.py
+      - g2lex/selectors/__init__.py
+      - g2lex/value.py
+    stats:
+      files_changed: 0
+      insertions: 164
+      deletions: 107
+    inspected: true
+    inspected_paths:
+      - g2lex/adapters/common.py
+      - g2lex/adapters/gruut_sqlite.py
+      - g2lex/adapters/jsonl.py
+      - g2lex/adapters/pls.py
+      - g2lex/adapters/tsv.py
+      - g2lex/adapters/words.py
+      - g2lex/asset.py
+      - g2lex/asset_v4.py
+      - g2lex/boundary_rules.py
+      - g2lex/builder.py
+      - g2lex/cli.py
+      - g2lex/composer.py
+      - g2lex/container.py
+      - g2lex/diagnostics.py
+      - g2lex/format.py
+      - g2lex/g2p.py
+      - g2lex/graphone.py
+      - g2lex/kokoro.py
+      - g2lex/layers.py
+      - g2lex/lexicon.py
+      - g2lex/literals.py
+      - g2lex/membership.py
+      - g2lex/model.py
+      - g2lex/neural.py
+      - g2lex/operations.py
+      - g2lex/reconstructors.py
+      - g2lex/reports.py
+      - g2lex/resolver.py
+      - g2lex/selectors/__init__.py
+      - g2lex/value.py
+    observed_behavior:
+      Strengthened type-safe adapter and runtime code paths, including
+      deterministic selector choice and safer serialized buffer handling
+    public_impact: public
+    decision: accepted
+    evidence_subject: "chore: fix mypy"
+    target_entry_key: runtime-hardening
+    target_entry_id: entry-0003
+    notes:
+      Reviewed the changed implementations and their compatibility-facing runtime
+      effects
+  - sha: 0f218b748072198a37827c5df02ee6c6b7ba59ca
+    source_ref: git:0f218b748072198a37827c5df02ee6c6b7ba59ca
+    short_sha: 0f218b7
+    changed_paths:
+      - .ledger/releaseledger/data/ledgers/main/events/events.jsonl
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/entries/entry-0008.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/entries/entry-0009.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/entries/entry-0010.md
+      - .ledger/releaseledger/data/ledgers/main/releases/v0.1.0/release.md
+      - README.md
+      - docs/changelog.md
+      - g2lex/__init__.py
+      - g2lex/format.py
+      - g2lex/kokoro.py
+      - g2lex/layers.py
+      - tests/test_format.py
+      - tests/test_release_readiness_extended.py
+    stats:
+      files_changed: 0
+      insertions: 360
+      deletions: 61
+    inspected: true
+    inspected_paths:
+      - README.md
+      - g2lex/__init__.py
+      - g2lex/format.py
+      - g2lex/kokoro.py
+      - g2lex/layers.py
+      - tests/test_format.py
+      - tests/test_release_readiness_extended.py
+    observed_behavior:
+      Added LayerHit provenance lookups and owned layered-lexicon lifecycle
+      management, rejected reserved manifest metadata collisions, and disabled live
+      Kokoro compatibility caching
+    public_impact: public
+    decision: accepted
+    evidence_subject: "feat: hardening and bug fixes"
+    target_entry_key: api-hardening
+    target_entry_id: entry-0004
+    notes:
+      Reviewed README API documentation, implementation changes, and regression
+      tests; ledger-file changes are release bookkeeping

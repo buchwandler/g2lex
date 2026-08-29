@@ -46,7 +46,7 @@ jobs:
       - name: Sdist smoke test
         run: |
           python -m venv /tmp/g2lex-sdist
-          /tmp/g2lex-sdist/bin/python -m pip install dist/g2lex-0.1.0.tar.gz
+          /tmp/g2lex-sdist/bin/python -m pip install dist/g2lex-*.tar.gz
           /tmp/g2lex-sdist/bin/g2lex --version
           /tmp/g2lex-sdist/bin/g2lex pack benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/sdist.g2lex --format tsv
           /tmp/g2lex-sdist/bin/g2lex verify benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/sdist.g2lex --format tsv

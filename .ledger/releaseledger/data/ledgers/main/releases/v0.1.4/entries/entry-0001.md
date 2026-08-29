@@ -4,23 +4,22 @@ object_type: release_entry
 versioning:
   schema_version: 1
   revision: 1
-entry_id: entry-0008
-release_version: v0.1.0
-kind: changed
-summary: Hardened layered lexicon iteration, provenance lookup, and lifecycle ownership
+entry_id: entry-0001
+release_version: v0.1.4
+kind: docs
+summary: Added PyPI package version, Python-version, and download badges to the README
 status: accepted
 audience: null
 scopes: []
 source_refs:
-  - tl:task-0007
+  - git:cf5f726f502476dcb6e968c13e43710975370350
 paths:
-  - g2lex/layers.py
-  - g2lex/__init__.py
+  - README.md
 issues: []
 prs: []
 sources: []
 contributors: []
 breaking: false
 internal: false
-order: 8
+order: 1
 ---
