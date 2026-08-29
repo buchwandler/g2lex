@@ -203,7 +203,6 @@ def test_version_resolution_from_sdist_metadata(
     assert version.get_version() == "1.2.3"
 
 
-
 def test_training_models_and_alignment() -> None:
     assert align("ab", "xy", max_output_chunk_length=1) == (("a", "x"), ("b", "y"))
     with pytest.raises(ValueError, match="non-negative"):

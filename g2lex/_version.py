@@ -13,6 +13,7 @@ _TAG = re.compile(
     r"^v?(?P<base>\d+\.\d+\.\d+)(?:-(?P<count>\d+)-g(?P<sha>[0-9a-f]+))?(?P<dirty>-dirty)?$"
 )
 
+
 def _sdist_version(root: Path) -> str | None:
     """Return the version embedded in an extracted sdist, if present."""
     try:
