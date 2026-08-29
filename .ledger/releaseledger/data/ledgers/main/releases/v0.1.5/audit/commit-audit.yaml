@@ -1,0 +1,215 @@
+schema_version: 1
+object_type: commit_audit_sheet
+versioning:
+  schema_version: 1
+  revision: 3
+release_version: v0.1.5
+git_base_ref: v0.1.4
+git_base_sha: 410f8544a940c5ab5b7b96883adb3e2df116e7a7
+git_head_ref: HEAD
+git_head_sha: 5007b80b173ab0dc8bb41be8b996a302751631ee
+git_range: 410f8544a940c5ab5b7b96883adb3e2df116e7a7..5007b80b173ab0dc8bb41be8b996a302751631ee
+commit_count: 3
+rows:
+  - sha: 50e3937318b57ef8845b688da425e0ddf3febe96
+    source_ref: git:50e3937318b57ef8845b688da425e0ddf3febe96
+    short_sha: 50e3937
+    changed_paths:
+      - .github/workflows/codecov.yml
+      - VALIDATION.md
+      - g2lex/audit.py
+      - g2lex/container.py
+      - g2lex/key_index.py
+      - g2lex/lexicon.py
+      - tests/test_adapter_errors.py
+      - tests/test_asset_serialization_edges.py
+      - tests/test_cli_edges.py
+      - tests/test_container_corruption.py
+      - tests/test_diagnostics_edges.py
+      - tests/test_key_index_edges.py
+      - tests/test_lexicon_runtime_edges.py
+      - tests/test_literal_store_edges.py
+      - tests/test_membership_backends_edges.py
+      - tests/test_operations_edges.py
+      - tests/test_optimizer.py
+      - tests/test_pls_adapter_edges.py
+      - tests/test_reconstruction_rules_edges.py
+      - tests/test_record_store_errors.py
+      - tests/test_verify_exact_edges.py
+    stats:
+      files_changed: 0
+      insertions: 2119
+      deletions: 18
+    inspected: true
+    inspected_paths:
+      - .github/workflows/codecov.yml
+      - g2lex/audit.py
+      - g2lex/container.py
+      - g2lex/key_index.py
+      - g2lex/lexicon.py
+      - tests/test_container_corruption.py
+      - tests/test_lexicon_runtime_edges.py
+    observed_behavior:
+      Binary asset loading now rejects malformed headers, descriptors,
+      varints, record directories, checksums, and compressed blocks with explicit errors;
+      failed mmap/resource opens release their memory views and mappings, and the expanded
+      edge-case suite exercises these paths.
+    public_impact: public
+    decision: accepted
+    evidence_subject: "feat: improved coverage"
+    target_entry_id: entry-0001
+    notes:
+      Reviewed the runtime and integrity changes plus their regression coverage;
+      coverage-policy changes are supporting CI evidence.
+  - sha: 0ccfd8853b3ce42c17b14c6597b44b0886935f0a
+    source_ref: git:0ccfd8853b3ce42c17b14c6597b44b0886935f0a
+    short_sha: 0ccfd88
+    changed_paths:
+      - .github/workflows/tests.yml
+      - docs/benchmarking.md
+      - docs/binary-format-v1.md
+      - docs/cli.md
+      - docs/compatibility.md
+      - docs/concepts.md
+      - docs/conf.py
+      - docs/experimental-reduction.md
+      - docs/getting-started.md
+      - docs/index.md
+      - docs/layering.md
+      - docs/make.py
+      - docs/package-resources.md
+      - docs/python-api.md
+      - docs/requirements.txt
+      - docs/source-formats.md
+      - docs/validation-status.md
+      - docs/validation/v0.1.0.md
+      - g2lex/adapters/tsv.py
+      - g2lex/asset.py
+      - g2lex/asset_v4.py
+      - g2lex/boundary_rules.py
+      - g2lex/builder.py
+      - g2lex/cli.py
+      - g2lex/commands/__init__.py
+      - g2lex/commands/common.py
+      - g2lex/commands/convert.py
+      - g2lex/commands/diff.py
+      - g2lex/commands/export.py
+      - g2lex/commands/inspect.py
+      - g2lex/commands/lookup.py
+      - g2lex/commands/pack.py
+      - g2lex/commands/reduce.py
+      - g2lex/commands/restore.py
+      - g2lex/commands/verify.py
+      - g2lex/composer.py
+      - g2lex/diagnostics.py
+      - g2lex/format.py
+      - g2lex/literals.py
+      - g2lex/mappings.py
+      - g2lex/model.py
+      - g2lex/reconstructors.py
+      - g2lex/resolver.py
+      - g2lex/rule_types.py
+      - g2lex/rules.py
+      - g2lex/runtime.py
+      - g2lex/search.py
+      - g2lex/segmentation.py
+      - g2lex/selectors/__init__.py
+      - g2lex/selectors/forest.py
+      - g2lex/selectors/gbdt.py
+      - g2lex/selectors/logistic.py
+      - g2lex/selectors/priority.py
+      - g2lex/selectors/tree.py
+      - g2lex/types.py
+      - g2lex/value.py
+      - tests/test_adapter_rejection_matrices.py
+      - tests/test_cli_edges.py
+      - tests/test_docs_config.py
+      - tests/test_format.py
+      - tests/test_package_contract.py
+      - tests/test_reduce_api.py
+      - tests/test_selector_modules.py
+      - tests/test_value_model_contract.py
+    stats:
+      files_changed: 0
+      insertions: 1545
+      deletions: 563
+    inspected: true
+    inspected_paths:
+      - .github/workflows/tests.yml
+      - docs/index.md
+      - docs/conf.py
+      - docs/make.py
+      - docs/cli.md
+      - docs/python-api.md
+      - docs/compatibility.md
+      - g2lex/cli.py
+      - g2lex/commands/__init__.py
+      - g2lex/commands/lookup.py
+      - g2lex/commands/pack.py
+      - g2lex/commands/verify.py
+      - tests/test_docs_config.py
+    observed_behavior:
+      The CLI handlers are split into focused command modules while
+      preserving stable and experimental command behavior, and the documentation site
+      now covers installation, formats, APIs, compatibility, layering, reduction, validation,
+      and strict HTML/JSON builds across the supported documentation workflow.
+    public_impact: public
+    decision: accepted
+    evidence_subject: "feat: fix sphinx"
+    target_entry_id: entry-0002
+    notes:
+      Reviewed the command extraction, documentation tree/configuration, CI documentation
+      matrix, and related tests.
+  - sha: 5007b80b173ab0dc8bb41be8b996a302751631ee
+    source_ref: git:5007b80b173ab0dc8bb41be8b996a302751631ee
+    short_sha: 5007b80
+    changed_paths:
+      - README.md
+      - docs/concepts.md
+      - docs/python-api.md
+      - docs/source-formats.md
+      - g2lex/__init__.py
+      - g2lex/asset.py
+      - g2lex/asset_v4.py
+      - g2lex/boundary_rules.py
+      - g2lex/composer.py
+      - g2lex/lexicon.py
+      - g2lex/model.py
+      - g2lex/resolver.py
+      - g2lex/selectors/forest.py
+      - g2lex/selectors/tree.py
+      - g2lex/value.py
+      - tests/test_adapter_rejection_matrices.py
+      - tests/test_docs_config.py
+      - tests/test_lexicon_runtime_edges.py
+      - tests/test_package_contract.py
+      - tests/test_reduce_api.py
+      - tests/test_selector_modules.py
+      - tests/test_value_model_contract.py
+    stats:
+      files_changed: 0
+      insertions: 228
+      deletions: 35
+    inspected: true
+    inspected_paths:
+      - README.md
+      - docs/concepts.md
+      - docs/python-api.md
+      - docs/source-formats.md
+      - g2lex/__init__.py
+      - g2lex/lexicon.py
+      - g2lex/value.py
+      - tests/test_lexicon_runtime_edges.py
+      - tests/test_value_model_contract.py
+    observed_behavior:
+      The public API now preserves exact typed mapping values while
+      providing ordered pronunciation_variants and first_pronunciation helpers, Lexicon.lookup_all
+      and Lexicon.lookup with tag/default fallback, and validation for empty tags; tests
+      cover scalar, variant, tagged, word-only, missing, and TSV cases.
+    public_impact: public
+    decision: accepted
+    evidence_subject: "feat: better lookup"
+    target_entry_id: entry-0003
+    notes:
+      Reviewed the lookup implementation, root exports, user-facing documentation,
+      and regression tests.

@@ -3,12 +3,12 @@ schema_version: 2
 object_type: release
 versioning:
   schema_version: 1
-  revision: 4
+  revision: 6
 version: v0.1.4
 status: released
 title: g2lex 0.1.4
 released_at: "2026-08-29"
-previous_version: v0.1.0
+previous_version: 0.1.3
 cancel_reason: null
 superseded_by: null
 changelog_file: docs/changelog.md
