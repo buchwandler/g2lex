@@ -133,9 +133,11 @@ def loads(data: bytes | bytearray | memoryview) -> V4Container:
 def load(path: str | Path) -> V4Container:
     with Path(path).open("rb") as handle:
         mapped = mmap.mmap(handle.fileno(), 0, access=mmap.ACCESS_READ)
+    view = memoryview(mapped)
     try:
-        return _with_owner(loads(memoryview(mapped)), mapped)
+        return _with_owner(loads(view), mapped)
     except Exception:
+        view.release()
         mapped.close()
         raise
 

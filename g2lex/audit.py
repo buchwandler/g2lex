@@ -82,6 +82,8 @@ def audit_runtime_representation(candidate: ImplicitLexicon) -> dict[str, Any]:
     findings = _audit_value(inspected, "runtime")
     if findings:
         raise AssertionError(f"forbidden serialized runtime structures: {findings}")
+    # Metadata is part of the persisted runtime representation and must remain JSON-safe.
+    json.dumps(_serializable(inspected), sort_keys=True, separators=(",", ":"))
     selector = getattr(candidate.runtime_program, "selector", None)
     if selector is None:
         selector = getattr(candidate.composer.rules, "selector", None)

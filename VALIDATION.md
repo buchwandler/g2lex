@@ -3,7 +3,7 @@
 ## Environment
 
 - Repository: `g2lex`
-- Runtime used for local checks: CPython 3.13.14 on Linux
+- Runtime used for local checks: CPython 3.14.6 on Android (Termux)
 - Runtime dependencies: none
 - Validation scope: the candidate workspace after the release-readiness fixes
 
@@ -19,34 +19,37 @@
 
 ```text
 python -m pytest
-75 passed
+193 passed
 ```
 
-Recorded as taskledger check `check-0035`.
+Recorded as taskledger check `check-0048`.
 
 ## Coverage
 
-The configured whole-package branch coverage gate passed:
+The canonical whole-package branch-aware coverage gate passed:
 
 ```text
-python -m pytest --cov=g2lex --cov-branch --cov-report=term-missing --cov-report=xml --cov-fail-under=80
-75 passed
-Total coverage: 80.58%
+python -m pytest --cov=g2lex --cov-branch --cov-report=term-missing --cov-report=json:coverage.json
+Statements: 4,671 / 4,970 covered (93.98%)
+Branches: 1,397 / 1,618 covered (86.34%)
+Combined coverage: 92.11%
 ```
 
-Recorded as taskledger check `check-0039`. Coverage targets the complete `g2lex`
-package and does not use ordinary coverage exclusions to hide missing tests.
+The CI gate is now 90% combined coverage with an independent 80% branch floor. Coverage targets the complete `g2lex` package and does not use ordinary coverage exclusions to hide missing tests.
+
+Recorded as taskledger check `check-0049`.
 
 ## Ruff/pre-commit
 
-- `python -m ruff check .`: passed, taskledger check `check-0043`
-- `python -m ruff format --check .`: passed, taskledger check `check-0044`
-- `pre-commit run --all-files`: passed, taskledger check `check-0046`
+- `python -m ruff check .`: passed, taskledger check `check-0044`
+- `python -m ruff format --check .`: passed, taskledger check `check-0043`
+- `pre-commit run --all-files`: passed, taskledger check `check-0047`
 
 ## Compilation and warning-clean tests
 
-- `python -m compileall -q g2lex tests benchmarks examples scripts`: passed, taskledger check `check-0047`
-- `python -m pytest -W error::ResourceWarning -W error::pytest.PytestUnraisableExceptionWarning`: 74 passed, taskledger check `check-0037`
+- `python -m compileall -q g2lex tests benchmarks examples scripts`: passed, taskledger check `check-0046`
+- `python -W error::ResourceWarning -m pytest`: 193 passed, taskledger check `check-0045`
+- `python -m pytest -W error::ResourceWarning -W error::pytest.PytestUnraisableExceptionWarning`: 193 passed
 
 The Gruut SQLite adapter and its fixture now close connections explicitly.
 

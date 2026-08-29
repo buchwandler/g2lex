@@ -23,6 +23,8 @@ def _read_varint(view: memoryview, position: int, end: int) -> tuple[int, int]:
     shift = 0
     while position < end and shift <= 63:
         byte = view[position]
+        if shift == 63 and byte > 1:
+            raise ValueError("invalid or truncated key-index varint")
         position += 1
         value |= (byte & 0x7F) << shift
         if not byte & 0x80:

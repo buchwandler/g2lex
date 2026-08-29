@@ -177,8 +177,11 @@ def _open_mmap(path: Path) -> Lexicon:
     try:
         mapped = mmap.mmap(handle.fileno(), 0, access=mmap.ACCESS_READ)
         container = BinaryLexiconContainer(memoryview(mapped))
-    except Exception:
+    except Exception as exc:
         if mapped is not None:
+            import traceback
+
+            traceback.clear_frames(exc.__traceback__)
             mapped.close()
         handle.close()
         raise
@@ -209,6 +212,9 @@ def open_traversable(resource: Any) -> Lexicon:
     """Open a package resource while retaining any temporary extraction lifetime."""
     if isinstance(resource, (str, Path)):
         return open_lexicon(resource)
+    path = getattr(resource, "__fspath__", None)
+    if path is not None:
+        return open_lexicon(path())
 
     stack = ExitStack()
     try:
@@ -216,7 +222,7 @@ def open_traversable(resource: Any) -> Lexicon:
 
         path = stack.enter_context(as_file(resource))
         lexicon = _open_mmap(Path(path))
-    except (TypeError, FileNotFoundError):
+    except (TypeError, FileNotFoundError, AttributeError):
         stack.close()
         return open_bytes(resource.read_bytes())
     except Exception:
