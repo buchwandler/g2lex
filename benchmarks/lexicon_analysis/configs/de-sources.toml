@@ -1,0 +1,4 @@
+# Explicit local paths are supplied at invocation time; no downloads are implied.
+# Example: python -m benchmarks.lexicon_analysis.run --source gold=...:tsv
+[analysis]
+conflict_limit = 1000

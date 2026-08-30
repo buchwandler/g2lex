@@ -209,6 +209,17 @@ Results are fixture-specific measurements. The project does not promise a
 particular compression ratio or performance advantage over SQLite without
 benchmark evidence.
 
+The generic source-analysis benchmark compares independent local G2Lex sources without changing exact keys or values:
+
+```bash
+python -m benchmarks.lexicon_analysis.run \
+  --source gold=path/to/gold.g2lex \
+  --source crane=path/to/crane.tsv:tsv \
+  --output runs/de-analysis --conflict-limit 1000
+```
+
+It reports exact/lower/casefold/NFC/NFD collisions, Unicode statistics, source shape, pairwise typed-value and variant agreement, deterministic conflict samples, cross-source sharing, and precedence metrics from `LayeredLexicon`. Inputs are explicit and are never downloaded automatically. Pronunciation interning remains an isolated experimental benchmark; it is not part of stable G2LX serialization.
+
 ## Development
 
 ```bash

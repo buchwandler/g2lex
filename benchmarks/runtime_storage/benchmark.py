@@ -15,6 +15,8 @@ from statistics import quantiles
 from g2lex import open as open_g2lex
 from g2lex import pack_file, read_typed_lexicon
 
+from .compression import compare_compression_layers
+
 
 def _percentiles(values: list[float]) -> dict[str, float]:
     if len(values) < 2:
@@ -162,6 +164,15 @@ def run_benchmark(
                 repetitions,
             ),
         ]
+        baselines = (
+            json_path.read_bytes(),
+            tsv_path.read_bytes(),
+            sqlite_path.read_bytes(),
+            source_path.read_bytes(),
+        )
+        asset_data = asset_path.read_bytes()
+        for result, baseline in zip(results, baselines, strict=True):
+            result["compression"] = compare_compression_layers(baseline, asset_data)
     return results
 
 

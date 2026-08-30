@@ -1,6 +1,6 @@
-# German lexicon entry-reduction reproduction
+# German lexicon entry-reduction benchmark
 
-This directory reproduces the later KokoroG2P `experiments/de_lexicon_entry_reduction` research harness around the standalone `g2lex` package.
+This directory contains the G2Lex-native German entry-reduction benchmark and its offline fixtures. It is the maintained home for storage/reconstruction research formerly developed in a separate consumer repository.
 
 The runtime contract is the same: generated words are never represented by a runtime word→recipe map. Exact membership is a compact DAFSA, and reconstruction is spelling-only from literals plus shared rules/indexes.
 

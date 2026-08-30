@@ -206,16 +206,279 @@ class BinaryPoolLiteralStore:
         return result
 
 
+class InternedBinaryPoolLiteralStore:
+    """Experimental global string/variant-tuple interned literal store.
+
+    This backend is intentionally independent of the stable G2LX asset format.
+    Keys are exact and values remain ordered tuples, including duplicates.
+    """
+
+    backend_id = "interned-binary-pool-v1"
+
+    def __init__(
+        self,
+        values: Mapping[str, Iterable[str]] | None = None,
+        *,
+        keys: tuple[str, ...] | None = None,
+        key_offsets: tuple[int, ...] | None = None,
+        key_pool: bytes | memoryview | None = None,
+        string_offsets: tuple[int, ...] | None = None,
+        string_pool: bytes | memoryview | None = None,
+        tuple_offsets: tuple[int, ...] | None = None,
+        tuple_pool: bytes | memoryview | None = None,
+        key_tuple_ids: tuple[int, ...] | None = None,
+    ) -> None:
+        if values is not None:
+            items = sorted(
+                (str(key), tuple(str(item) for item in raw)) for key, raw in values.items()
+            )
+            self._keys = tuple(key for key, _ in items)
+            encoded_keys = [key.encode("utf-8") for key in self._keys]
+            key_offsets_mut = [0]
+            for key in encoded_keys:
+                key_offsets_mut.append(key_offsets_mut[-1] + len(key))
+            self._key_offsets = tuple(key_offsets_mut)
+            self._key_pool = b"".join(encoded_keys)
+            strings = sorted({item for _, raw in items for item in raw})
+            tuples = sorted({raw for _, raw in items})
+            self._strings = StringInterner(tuple(strings))
+            self._tuples = VariantTupleInterner(tuple(tuples))
+            string_encoded = [item.encode("utf-8") for item in self._strings.values]
+            string_offsets_mut = [0]
+            for item in string_encoded:
+                string_offsets_mut.append(string_offsets_mut[-1] + len(item))
+            self._string_offsets = tuple(string_offsets_mut)
+            self._string_pool = b"".join(string_encoded)
+            tuple_payloads = [
+                struct.pack("<I", len(raw))
+                + b"".join(struct.pack("<I", self._strings.encode(item)) for item in raw)
+                for raw in self._tuples.values
+            ]
+            tuple_offsets_mut = [0]
+            for payload in tuple_payloads:
+                tuple_offsets_mut.append(tuple_offsets_mut[-1] + len(payload))
+            self._tuple_offsets = tuple(tuple_offsets_mut)
+            self._tuple_pool = b"".join(tuple_payloads)
+            self._key_tuple_ids = tuple(self._tuples.encode(raw) for _, raw in items)
+        else:
+            required = (
+                keys,
+                key_offsets,
+                key_pool,
+                string_offsets,
+                string_pool,
+                tuple_offsets,
+                tuple_pool,
+                key_tuple_ids,
+            )
+            if any(value is None for value in required):
+                raise TypeError("interned pool arrays are required when values are absent")
+            self._keys = keys  # type: ignore[assignment]
+            self._key_offsets = key_offsets  # type: ignore[assignment]
+            self._key_pool = bytes(key_pool)  # type: ignore[arg-type]
+            self._string_offsets = string_offsets  # type: ignore[assignment]
+            self._string_pool = bytes(string_pool)  # type: ignore[arg-type]
+            self._tuple_offsets = tuple_offsets  # type: ignore[assignment]
+            self._tuple_pool = bytes(tuple_pool)  # type: ignore[arg-type]
+            self._key_tuple_ids = key_tuple_ids  # type: ignore[assignment]
+            self._strings = StringInterner(())
+            self._tuples = VariantTupleInterner(())
+        if len(self._keys) + 1 != len(self._key_offsets) or len(self._keys) != len(
+            self._key_tuple_ids
+        ):
+            raise ValueError("interned key arrays do not match key count")
+        if len(self._string_offsets) == 0 or len(self._tuple_offsets) == 0:
+            raise ValueError("interned offset arrays must not be empty")
+        self._serialized: bytes | None = None
+        self._decoded_strings: dict[int, str] = {}
+        self._decoded_tuples: dict[int, PronunciationTuple] = {}
+
+    @classmethod
+    def from_mapping(cls, values: Mapping[str, Iterable[str]]) -> InternedBinaryPoolLiteralStore:
+        return cls(values)
+
+    def _position(self, word: str) -> int:
+        position = bisect_left(self._keys, word)
+        return position if position < len(self._keys) and self._keys[position] == word else -1
+
+    def _string(self, identifier: int) -> str:
+        if identifier < 0 or identifier + 1 >= len(self._string_offsets):
+            raise ValueError("interned pronunciation string ID out of range")
+        if identifier not in self._decoded_strings:
+            start, end = self._string_offsets[identifier : identifier + 2]
+            if start > end or end > len(self._string_pool):
+                raise ValueError("invalid interned pronunciation string range")
+            try:
+                self._decoded_strings[identifier] = bytes(self._string_pool[start:end]).decode(
+                    "utf-8"
+                )
+            except UnicodeDecodeError as exc:
+                raise ValueError("interned pronunciation string is not UTF-8") from exc
+        return self._decoded_strings[identifier]
+
+    def _tuple(self, identifier: int) -> PronunciationTuple:
+        if identifier < 0 or identifier + 1 >= len(self._tuple_offsets):
+            raise ValueError("interned variant tuple ID out of range")
+        if identifier in self._decoded_tuples:
+            return self._decoded_tuples[identifier]
+        start, end = self._tuple_offsets[identifier : identifier + 2]
+        if start > end or end > len(self._tuple_pool) or end - start < 4:
+            raise ValueError("invalid interned variant tuple range")
+        view = memoryview(self._tuple_pool)[start:end]
+        count = struct.unpack_from("<I", view)[0]
+        if 4 + 4 * count != len(view):
+            raise ValueError("invalid interned variant tuple payload")
+        values = tuple(
+            self._string(struct.unpack_from("<I", view, 4 + index * 4)[0]) for index in range(count)
+        )
+        self._decoded_tuples[identifier] = values
+        return values
+
+    def __contains__(self, word: object) -> bool:
+        return isinstance(word, str) and self._position(word) >= 0
+
+    def __getitem__(self, word: str) -> PronunciationTuple:
+        position = self._position(word)
+        if position < 0:
+            raise KeyError(word)
+        return self._tuple(self._key_tuple_ids[position])
+
+    def get(self, word: str, default: Any = None) -> PronunciationTuple | Any:
+        try:
+            return self[word]
+        except KeyError:
+            return default
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._keys)
+
+    def __len__(self) -> int:
+        return len(self._keys)
+
+    def prefixes(self, text: str, position: int = 0) -> tuple[str, ...]:
+        return tuple(word for word in self._keys if text[position:].startswith(word))
+
+    @property
+    def words(self) -> tuple[str, ...]:
+        return self._keys
+
+    @property
+    def serialized_bytes(self) -> int:
+        return len(self.serialize())
+
+    @property
+    def mapped_bytes(self) -> int:
+        return len(self._key_pool) + len(self._string_pool) + len(self._tuple_pool)
+
+    @property
+    def resident_object_count_estimate(self) -> int:
+        return len(self._keys) + len(self._key_tuple_ids) + len(self._decoded_tuples)
+
+    def serialize(self) -> bytes:
+        if self._serialized is None:
+            header = struct.pack(
+                "<4sIIIIIII",
+                b"LIT3",
+                1,
+                len(self._keys),
+                len(self._string_offsets) - 1,
+                len(self._tuple_offsets) - 1,
+                len(self._key_pool),
+                len(self._string_pool),
+                len(self._tuple_pool),
+            )
+            key_offsets = struct.pack(f"<{len(self._key_offsets)}I", *self._key_offsets)
+            string_offsets = struct.pack(f"<{len(self._string_offsets)}I", *self._string_offsets)
+            tuple_offsets = struct.pack(f"<{len(self._tuple_offsets)}I", *self._tuple_offsets)
+            key_ids = struct.pack(f"<{len(self._key_tuple_ids)}I", *self._key_tuple_ids)
+            self._serialized = (
+                header
+                + key_offsets
+                + string_offsets
+                + tuple_offsets
+                + key_ids
+                + bytes(self._key_pool)
+                + bytes(self._string_pool)
+                + bytes(self._tuple_pool)
+            )
+        return self._serialized
+
+    def serialize_sections(self) -> Mapping[str, bytes]:
+        return {"literals.interned-binary-pool": self.serialize()}
+
+    @classmethod
+    def deserialize(cls, data: bytes | bytearray | memoryview) -> InternedBinaryPoolLiteralStore:
+        view = memoryview(data)
+        if len(view) < 32 or bytes(view[:4]) != b"LIT3":
+            raise ValueError("invalid interned literal pool header")
+        _, version, count, string_count, tuple_count, key_size, string_size, tuple_size = (
+            struct.unpack_from("<4sIIIIIII", view)
+        )
+        if version != 1:
+            raise ValueError(f"unsupported interned literal pool version: {version}")
+        cursor = 32
+        key_offsets_size = 4 * (count + 1)
+        string_offsets_size = 4 * (string_count + 1)
+        tuple_offsets_size = 4 * (tuple_count + 1)
+        ids_size = 4 * count
+        tables_end = cursor + key_offsets_size + string_offsets_size + tuple_offsets_size + ids_size
+        if tables_end > len(view):
+            raise ValueError("truncated interned literal pool tables")
+        key_offsets = struct.unpack_from(f"<{count + 1}I", view, cursor)
+        cursor += key_offsets_size
+        string_offsets = struct.unpack_from(f"<{string_count + 1}I", view, cursor)
+        cursor += string_offsets_size
+        tuple_offsets = struct.unpack_from(f"<{tuple_count + 1}I", view, cursor)
+        cursor += tuple_offsets_size
+        key_tuple_ids = struct.unpack_from(f"<{count}I", view, cursor) if count else ()
+        cursor += ids_size
+        end = cursor + key_size + string_size + tuple_size
+        if (
+            end != len(view)
+            or key_offsets[-1] != key_size
+            or string_offsets[-1] != string_size
+            or tuple_offsets[-1] != tuple_size
+        ):
+            raise ValueError("invalid interned literal pool ranges")
+        key_pool = view[cursor : cursor + key_size]
+        cursor += key_size
+        string_pool = view[cursor : cursor + string_size]
+        cursor += string_size
+        tuple_pool = view[cursor:end]
+        keys = []
+        for start, stop in pairwise(key_offsets):
+            if start > stop or stop > key_size:
+                raise ValueError("invalid interned key range")
+            try:
+                keys.append(bytes(key_pool[start:stop]).decode("utf-8"))
+            except UnicodeDecodeError as exc:
+                raise ValueError("interned key is not UTF-8") from exc
+        if tuple(keys) != tuple(sorted(keys)) or len(set(keys)) != len(keys):
+            raise ValueError("interned literal keys are not sorted and unique")
+        if any(identifier >= tuple_count for identifier in key_tuple_ids):
+            raise ValueError("interned key tuple ID out of range")
+        result = cls(
+            keys=tuple(keys),
+            key_offsets=tuple(key_offsets),
+            key_pool=key_pool,
+            string_offsets=tuple(string_offsets),
+            string_pool=string_pool,
+            tuple_offsets=tuple(tuple_offsets),
+            tuple_pool=tuple_pool,
+            key_tuple_ids=tuple(key_tuple_ids),
+        )
+        result._serialized = bytes(view)
+        return result
+
+
 class FrontCodedLiteralStore(BinaryPoolLiteralStore):
     """Literal store control with an explicit front-coded key codec marker."""
 
     backend_id = "front-coded"
 
 
-class InternedLiteralStore(BinaryPoolLiteralStore):
-    """Exact pool store with globally interned strings and ordered tuples."""
-
-    backend_id = "interned-binary-pool"
+class InternedLiteralStore(InternedBinaryPoolLiteralStore):
+    """Compatibility name for the experimental interned backend."""
 
 
 class MarisaLiteralStore(BinaryPoolLiteralStore):
@@ -433,6 +696,7 @@ __all__ = [
     "FSTLiteralStore",
     "FrontCodedLiteralStore",
     "FrontCodedStore",
+    "InternedBinaryPoolLiteralStore",
     "InternedLiteralStore",
     "LiteralLexicon",
     "LiteralStore",
