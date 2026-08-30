@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from types import TracebackType
 from typing import Any, cast
@@ -127,6 +127,22 @@ class LayeredLexicon(Mapping[str, LexiconValue]):
             value = layer.lexicon.get(word, _MISSING)
             if value is not _MISSING:
                 return LayerHit(value, layer.name, layer.metadata, index)
+        return None
+
+    def get_hit_candidates(self, candidates: Iterable[str]) -> LayerHit | None:
+        """Return the first hit using layer-first, candidate-second precedence."""
+        self._ensure_open()
+        ordered: list[str] = []
+        seen: set[str] = set()
+        for candidate in candidates:
+            if candidate not in seen:
+                seen.add(candidate)
+                ordered.append(candidate)
+        for index, layer in enumerate(self.layers):
+            for candidate in ordered:
+                value = layer.lexicon.get(candidate, _MISSING)
+                if value is not _MISSING:
+                    return LayerHit(value, layer.name, layer.metadata, index)
         return None
 
     def get(self, word: str, default: Any = None) -> LexiconValue | Any:

@@ -143,6 +143,53 @@ def test_layered_hit_preserves_false_like_value() -> None:
     assert layered.get("x", "default") is None
 
 
+def test_layered_candidate_lookup_prioritizes_layers() -> None:
+    layered = LayeredLexicon(
+        [
+            LexiconLayer("gold", {"haus": "GOLD"}, {}),
+            LexiconLayer("crane", {"Haus": "CRANE"}, {}),
+        ]
+    )
+
+    hit = layered.get_hit_candidates(("Haus", "haus"))
+    assert hit is not None
+    assert hit.name == "gold"
+    assert hit.value == "GOLD"
+    assert hit.index == 0
+
+
+def test_layered_candidate_lookup_preserves_order_within_layer() -> None:
+    layered = LayeredLexicon([LexiconLayer("one", {"Haus": "EXACT", "haus": "LOWER"}, {})])
+
+    exact_hit = layered.get_hit_candidates(("Haus", "haus"))
+    assert exact_hit is not None
+    assert exact_hit.value == "EXACT"
+    lower_hit = layered.get_hit_candidates(("haus", "Haus"))
+    assert lower_hit is not None
+    assert lower_hit.value == "LOWER"
+
+
+def test_layered_candidate_lookup_deduplicates_and_preserves_false_like_values() -> None:
+    layered = LayeredLexicon([LexiconLayer("values", {"word": None, "empty": ""}, {})])
+
+    none_hit = layered.get_hit_candidates(("word", "word", "missing", "word"))
+    assert none_hit is not None
+    assert none_hit.value is None
+    empty_hit = layered.get_hit_candidates(("empty", "empty"))
+    assert empty_hit is not None
+    assert empty_hit.value == ""
+    assert layered.get_hit_candidates(()) is None
+    assert layered.get_hit_candidates(("missing",)) is None
+
+
+def test_layered_candidate_lookup_rejects_closed_lexicon() -> None:
+    layered = LayeredLexicon([LexiconLayer("one", {"word": "value"}, {})])
+    layered.close()
+
+    with pytest.raises(ValueError, match="closed"):
+        layered.get_hit_candidates(("word",))
+
+
 def test_layered_close_is_idempotent_and_context_managed() -> None:
     class CloseOnceMapping(dict[str, str]):
         def __init__(self, *args: object, **kwargs: str) -> None:
