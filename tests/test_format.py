@@ -260,12 +260,8 @@ def test_pack_file_is_independent_of_source_checkout_path(tmp_path: Path) -> Non
 
     from g2lex import read_typed_lexicon
 
-    first_parsed = read_typed_lexicon(
-        first_source, format="kokoro-json", source_id="en-us:gold"
-    )
-    second_parsed = read_typed_lexicon(
-        second_source, format="kokoro-json", source_id="en-us:gold"
-    )
+    first_parsed = read_typed_lexicon(first_source, format="kokoro-json", source_id="en-us:gold")
+    second_parsed = read_typed_lexicon(second_source, format="kokoro-json", source_id="en-us:gold")
     assert first_parsed.source.path == str(first_source)
     assert second_parsed.source.path == str(second_source)
     assert first_parsed.source.source_sha256 == second_parsed.source.source_sha256
