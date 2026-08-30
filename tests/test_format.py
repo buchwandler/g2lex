@@ -236,6 +236,42 @@ def test_file_api_self_verification_and_export(tmp_path: Path) -> None:
     assert parse_jsonl_bytes(exported.read_bytes()).entries["live"]["VERB"] == "v"
 
 
+def test_pack_file_is_independent_of_source_checkout_path(tmp_path: Path) -> None:
+    payload = '{"hello":"həˈloʊ","world":"wɝːld"}\n'.encode()
+    first_source = tmp_path / "short" / "lex.json"
+    second_source = tmp_path / "a-much-longer-checkout" / "lex.json"
+    first_source.parent.mkdir(parents=True)
+    second_source.parent.mkdir(parents=True)
+    first_source.write_bytes(payload)
+    second_source.write_bytes(payload)
+
+    first_asset = tmp_path / "first.g2lex"
+    second_asset = tmp_path / "second.g2lex"
+    pack_file(first_source, first_asset, input_format="kokoro-json", source_id="en-us:gold")
+    pack_file(second_source, second_asset, input_format="kokoro-json", source_id="en-us:gold")
+
+    assert first_asset.read_bytes() == second_asset.read_bytes()
+
+    first_lexicon = open_bytes(first_asset.read_bytes())
+    try:
+        assert first_lexicon.metadata["source"]["path"] == "lex.json"
+    finally:
+        first_lexicon.close()
+
+    from g2lex import read_typed_lexicon
+
+    first_parsed = read_typed_lexicon(
+        first_source, format="kokoro-json", source_id="en-us:gold"
+    )
+    second_parsed = read_typed_lexicon(
+        second_source, format="kokoro-json", source_id="en-us:gold"
+    )
+    assert first_parsed.source.path == str(first_source)
+    assert second_parsed.source.path == str(second_source)
+    assert first_parsed.source.source_sha256 == second_parsed.source.source_sha256
+    assert first_parsed.logical_sha256 == second_parsed.logical_sha256
+
+
 _RESERVED_MANIFEST_KEYS = (
     "format",
     "schema",

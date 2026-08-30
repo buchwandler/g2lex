@@ -8,6 +8,7 @@ import struct
 import zlib
 from collections.abc import Mapping
 from itertools import pairwise
+from pathlib import Path
 
 from .key_index import FrontCodedKeyIndex
 from .model import SourceInfo, TypedLexiconData
@@ -60,8 +61,7 @@ def _align(position: int, alignment: int = 8) -> int:
 
 def _source_dict(source: SourceInfo) -> dict[str, object]:
     value = source.canonical_dict()
-    if value.get("path"):
-        value["path"] = str(value["path"])
+    value["path"] = Path(source.path).name if source.path else None
     return value
 
 
