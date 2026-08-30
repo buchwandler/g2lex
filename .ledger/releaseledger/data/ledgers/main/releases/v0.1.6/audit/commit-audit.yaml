@@ -1,0 +1,36 @@
+schema_version: 1
+object_type: commit_audit_sheet
+versioning:
+  schema_version: 1
+  revision: 3
+release_version: v0.1.6
+git_base_ref: v0.1.5
+git_base_sha: e9224d3614f82ac9684545cfd4a855ed5ff40486
+git_head_ref: HEAD
+git_head_sha: 6dff4e71fbbbbf3ad9bfbb834943cf1950807cbd
+git_range: e9224d3614f82ac9684545cfd4a855ed5ff40486..6dff4e71fbbbbf3ad9bfbb834943cf1950807cbd
+commit_count: 1
+rows:
+- sha: 6dff4e71fbbbbf3ad9bfbb834943cf1950807cbd
+  source_ref: git:6dff4e71fbbbbf3ad9bfbb834943cf1950807cbd
+  short_sha: 6dff4e7
+  changed_paths:
+  - g2lex/layers.py
+  - tests/test_format.py
+  stats:
+    files_changed: 0
+    insertions: 64
+    deletions: 1
+  inspected: true
+  inspected_paths:
+  - g2lex/layers.py
+  - tests/test_format.py
+  observed_behavior: Added LayeredLexicon.get_hit_candidates to deduplicate ordered
+    candidates, search layer-first, and return the matching value with layer provenance;
+    added coverage for precedence, false-like values, empty candidates, and closed
+    lexicons
+  public_impact: public
+  decision: accepted
+  evidence_subject: 'feat: hit candicate'
+  target_entry_id: entry-0001
+  notes: Public API addition with focused regression coverage
