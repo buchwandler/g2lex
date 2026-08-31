@@ -1,0 +1,18 @@
+rows:
+  - sha: 703eaa66c7f23012aa924fff04d1060f8d3cafd6
+    inspected: true
+    inspected_paths:
+      - g2lex/adapters/__init__.py
+      - g2lex/adapters/ipa_tsv.py
+      - g2lex/cli.py
+      - g2lex/commands/inspect.py
+      - g2lex/commands/lookup.py
+      - g2lex/io.py
+      - g2lex/layers.py
+      - g2lex/value.py
+      - tests/test_ipa_tsv.py
+    observed_behavior: "Added and wired an IPA TSV parser that strips one outer slash pair, preserves internal slashes and duplicate variant order, accepts optional source annotations, and verifies lossless pack round trips. Focused IPA TSV tests pass."
+    public_impact: public
+    decision: accepted
+    target_entry_key: ipa-tsv-source
+    notes: ""

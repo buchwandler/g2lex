@@ -1,0 +1,30 @@
+schema_version: 1
+object_type: release_entry_batch
+release_version: v0.1.8
+git_base_ref: 23276d2297b354bbb470e1ba6847ffe5fd409ce8
+git_base_sha: 23276d2297b354bbb470e1ba6847ffe5fd409ce8
+git_head_ref: 703eaa66c7f23012aa924fff04d1060f8d3cafd6
+git_head_sha: 703eaa66c7f23012aa924fff04d1060f8d3cafd6
+include_merges: nontrivial
+entries:
+  - kind: added
+    summary: "Added an IPA TSV adapter with slash-delimited pronunciation parsing and CLI support"
+    status: accepted
+    source_refs:
+      - git:703eaa66c7f23012aa924fff04d1060f8d3cafd6
+    paths:
+      - g2lex/adapters/__init__.py
+      - g2lex/adapters/ipa_tsv.py
+      - g2lex/cli.py
+      - g2lex/commands/inspect.py
+      - g2lex/commands/lookup.py
+      - g2lex/io.py
+      - g2lex/layers.py
+      - g2lex/value.py
+      - tests/test_ipa_tsv.py
+    sources:
+      - git:703eaa66c7f23012aa924fff04d1060f8d3cafd6
+    prs: []
+    issues: []
+    contributors:
+      - "@holgern"

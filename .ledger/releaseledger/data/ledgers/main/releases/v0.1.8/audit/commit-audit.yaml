@@ -1,0 +1,52 @@
+schema_version: 1
+object_type: commit_audit_sheet
+versioning:
+  schema_version: 1
+  revision: 3
+release_version: v0.1.8
+git_base_ref: v0.1.7
+git_base_sha: 23276d2297b354bbb470e1ba6847ffe5fd409ce8
+git_head_ref: HEAD
+git_head_sha: 703eaa66c7f23012aa924fff04d1060f8d3cafd6
+git_range: 23276d2297b354bbb470e1ba6847ffe5fd409ce8..703eaa66c7f23012aa924fff04d1060f8d3cafd6
+commit_count: 1
+rows:
+  - sha: 703eaa66c7f23012aa924fff04d1060f8d3cafd6
+    source_ref: git:703eaa66c7f23012aa924fff04d1060f8d3cafd6
+    short_sha: 703eaa6
+    changed_paths:
+      - g2lex/adapters/__init__.py
+      - g2lex/adapters/ipa_tsv.py
+      - g2lex/cli.py
+      - g2lex/commands/inspect.py
+      - g2lex/commands/lookup.py
+      - g2lex/io.py
+      - g2lex/layers.py
+      - g2lex/value.py
+      - tests/test_ipa_tsv.py
+    stats:
+      files_changed: 0
+      insertions: 154
+      deletions: 11
+    inspected: true
+    inspected_paths:
+      - g2lex/adapters/__init__.py
+      - g2lex/adapters/ipa_tsv.py
+      - g2lex/cli.py
+      - g2lex/commands/inspect.py
+      - g2lex/commands/lookup.py
+      - g2lex/io.py
+      - g2lex/layers.py
+      - g2lex/value.py
+      - tests/test_ipa_tsv.py
+    observed_behavior:
+      Added and wired an IPA TSV parser that strips one outer slash
+      pair, preserves internal slashes and duplicate variant order, accepts optional
+      source annotations, and verifies lossless pack round trips. Focused IPA TSV tests
+      pass.
+    public_impact: public
+    decision: accepted
+    evidence_subject: "feat: new ipa-tsv source"
+    target_entry_key: ipa-tsv-source
+    target_entry_id: entry-0001
+    notes: ""
