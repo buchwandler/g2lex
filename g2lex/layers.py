@@ -124,9 +124,8 @@ class LayeredLexicon(Mapping[str, LexiconValue]):
         """Return the first layer containing ``word``, including false-like values."""
         self._ensure_open()
         for index, layer in enumerate(self.layers):
-            value = layer.lexicon.get(word, _MISSING)
-            if value is not _MISSING:
-                return LayerHit(value, layer.name, layer.metadata, index)
+            if word in layer.lexicon:
+                return LayerHit(layer.lexicon[word], layer.name, layer.metadata, index)
         return None
 
     def get_hit_candidates(self, candidates: Iterable[str]) -> LayerHit | None:
@@ -140,9 +139,8 @@ class LayeredLexicon(Mapping[str, LexiconValue]):
                 ordered.append(candidate)
         for index, layer in enumerate(self.layers):
             for candidate in ordered:
-                value = layer.lexicon.get(candidate, _MISSING)
-                if value is not _MISSING:
-                    return LayerHit(value, layer.name, layer.metadata, index)
+                if candidate in layer.lexicon:
+                    return LayerHit(layer.lexicon[candidate], layer.name, layer.metadata, index)
         return None
 
     def get(self, word: str, default: Any = None) -> LexiconValue | Any:

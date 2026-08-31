@@ -36,6 +36,7 @@ def parse_typed_bytes(
     from .adapters import (
         parse_cmudict_bytes,
         parse_extended_tsv_bytes,
+        parse_ipa_tsv_bytes,
         parse_json_map_bytes,
         parse_jsonl_bytes,
         parse_kokoro_json_bytes,
@@ -53,6 +54,8 @@ def parse_typed_bytes(
         return parse_json_map_bytes(data, path=path, source_id=source_id, allow_tagged=allow_tagged)
     if format == "jsonl":
         return parse_jsonl_bytes(data, path=path, source_id=source_id)
+    if format == "ipa-tsv":
+        return parse_ipa_tsv_bytes(data, path=path, source_id=source_id)
     if format == "cmudict":
         return parse_cmudict_bytes(data, path=path, source_id=source_id)
     if format == "mfa":

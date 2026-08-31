@@ -214,6 +214,7 @@ def pronunciation_variants(
         return ()
     if isinstance(selected, str):
         return (selected,)
+    assert isinstance(selected, tuple)
     return selected
 
 

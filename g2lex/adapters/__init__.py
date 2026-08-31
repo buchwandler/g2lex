@@ -2,6 +2,7 @@
 
 from .cmudict import parse_cmudict_bytes
 from .gruut_sqlite import parse_gruut_sqlite
+from .ipa_tsv import parse_ipa_tsv_bytes
 from .json_map import parse_json_map_bytes
 from .jsonl import parse_jsonl_bytes
 from .kokoro_json import parse_kokoro_json_bytes
@@ -14,6 +15,7 @@ __all__ = [
     "parse_cmudict_bytes",
     "parse_extended_tsv_bytes",
     "parse_gruut_sqlite",
+    "parse_ipa_tsv_bytes",
     "parse_json_map_bytes",
     "parse_jsonl_bytes",
     "parse_kokoro_json_bytes",

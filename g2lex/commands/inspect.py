@@ -7,6 +7,7 @@ from argparse import Namespace
 from dataclasses import asdict
 
 from ..asset import load, runtime_asset_bytes
+from ..model import ImplicitLexicon
 from ..operations import inspect_file
 
 
@@ -15,6 +16,7 @@ def _cmd_inspect(args: Namespace) -> int:
         print(json.dumps(inspect_file(args.asset), ensure_ascii=False, indent=2))
         return 0
     candidate = load(args.asset)
+    assert isinstance(candidate, ImplicitLexicon)
     summary = {
         **asdict(candidate.metrics()),
         "membership_state_count": getattr(candidate.membership, "state_count", 0),

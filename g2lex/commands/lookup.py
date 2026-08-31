@@ -16,15 +16,15 @@ def _cmd_lookup(args: Namespace) -> int:
         values = candidate.lookup_all(args.word)
         if not values:
             return 1
-        for value in values:
-            print(value)
+        for pronunciation in values:
+            print(pronunciation)
         return 0
     candidate = open_lexicon(args.asset)
     try:
-        value = candidate.get(args.word, MISSING)
-        if value is MISSING:
+        lookup_value = candidate.get(args.word, MISSING)
+        if lookup_value is MISSING:
             return 1
-        print(json.dumps(plain_lookup(value), ensure_ascii=False))
+        print(json.dumps(plain_lookup(lookup_value), ensure_ascii=False))
         return 0
     finally:
         candidate.close()
