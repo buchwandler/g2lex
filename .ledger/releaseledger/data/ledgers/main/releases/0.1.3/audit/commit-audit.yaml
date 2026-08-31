@@ -1,0 +1,92 @@
+schema_version: 1
+object_type: commit_audit_sheet
+versioning:
+  schema_version: 1
+  revision: 2
+release_version: 0.1.3
+git_base_ref: v0.1.2
+git_base_sha: c758669a1fa5f6151cee2cb0eec0576d873c3f29
+git_head_ref: v0.1.3
+git_head_sha: a1678d61d6a33136da04d31fa98a6460998552e4
+git_range: c758669a1fa5f6151cee2cb0eec0576d873c3f29..a1678d61d6a33136da04d31fa98a6460998552e4
+commit_count: 1
+rows:
+  - sha: a1678d61d6a33136da04d31fa98a6460998552e4
+    source_ref: git:a1678d61d6a33136da04d31fa98a6460998552e4
+    short_sha: a1678d6
+    changed_paths:
+      - g2lex/adapters/common.py
+      - g2lex/adapters/gruut_sqlite.py
+      - g2lex/adapters/jsonl.py
+      - g2lex/adapters/pls.py
+      - g2lex/adapters/tsv.py
+      - g2lex/adapters/words.py
+      - g2lex/asset.py
+      - g2lex/asset_v4.py
+      - g2lex/boundary_rules.py
+      - g2lex/builder.py
+      - g2lex/cli.py
+      - g2lex/composer.py
+      - g2lex/container.py
+      - g2lex/diagnostics.py
+      - g2lex/format.py
+      - g2lex/g2p.py
+      - g2lex/graphone.py
+      - g2lex/kokoro.py
+      - g2lex/layers.py
+      - g2lex/lexicon.py
+      - g2lex/literals.py
+      - g2lex/membership.py
+      - g2lex/model.py
+      - g2lex/neural.py
+      - g2lex/operations.py
+      - g2lex/reconstructors.py
+      - g2lex/reports.py
+      - g2lex/resolver.py
+      - g2lex/selectors/__init__.py
+      - g2lex/value.py
+    stats:
+      files_changed: 0
+      insertions: 164
+      deletions: 107
+    inspected: true
+    inspected_paths:
+      - g2lex/adapters/common.py
+      - g2lex/adapters/gruut_sqlite.py
+      - g2lex/adapters/jsonl.py
+      - g2lex/adapters/pls.py
+      - g2lex/adapters/tsv.py
+      - g2lex/adapters/words.py
+      - g2lex/asset.py
+      - g2lex/asset_v4.py
+      - g2lex/boundary_rules.py
+      - g2lex/builder.py
+      - g2lex/cli.py
+      - g2lex/composer.py
+      - g2lex/container.py
+      - g2lex/diagnostics.py
+      - g2lex/format.py
+      - g2lex/g2p.py
+      - g2lex/graphone.py
+      - g2lex/kokoro.py
+      - g2lex/layers.py
+      - g2lex/lexicon.py
+      - g2lex/literals.py
+      - g2lex/membership.py
+      - g2lex/model.py
+      - g2lex/neural.py
+      - g2lex/operations.py
+      - g2lex/reconstructors.py
+      - g2lex/reports.py
+      - g2lex/resolver.py
+      - g2lex/selectors/__init__.py
+      - g2lex/value.py
+    observed_behavior:
+      Improved runtime type safety and preserved concrete value handling
+      across adapters, asset serialization, lexicon operations, diagnostics, reconstruction
+      models, and selectors.
+    public_impact: public
+    decision: accepted
+    evidence_subject: "chore: fix mypy"
+    target_entry_key: type-safety
+    notes: ""

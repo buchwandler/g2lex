@@ -1,0 +1,33 @@
+schema_version: 1
+object_type: commit_audit_sheet
+versioning:
+  schema_version: 1
+  revision: 2
+release_version: 0.1.1
+git_base_ref: v0.1.0
+git_base_sha: 32183e4b2b6a8c0a5c536942df3f9be2e2da3c27
+git_head_ref: v0.1.1
+git_head_sha: cf5f726f502476dcb6e968c13e43710975370350
+git_range: 32183e4b2b6a8c0a5c536942df3f9be2e2da3c27..cf5f726f502476dcb6e968c13e43710975370350
+commit_count: 1
+rows:
+  - sha: cf5f726f502476dcb6e968c13e43710975370350
+    source_ref: git:cf5f726f502476dcb6e968c13e43710975370350
+    short_sha: cf5f726
+    changed_paths:
+      - README.md
+    stats:
+      files_changed: 0
+      insertions: 3
+      deletions: 0
+    inspected: true
+    inspected_paths:
+      - README.md
+    observed_behavior:
+      Added PyPI version, supported Python version, and download-count
+      badges to the README.
+    public_impact: docs
+    decision: accepted
+    evidence_subject: "doc: batches"
+    target_entry_key: badges
+    notes: ""

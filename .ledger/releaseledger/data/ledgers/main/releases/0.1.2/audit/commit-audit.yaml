@@ -1,0 +1,33 @@
+schema_version: 1
+object_type: commit_audit_sheet
+versioning:
+  schema_version: 1
+  revision: 2
+release_version: 0.1.2
+git_base_ref: v0.1.1
+git_base_sha: cf5f726f502476dcb6e968c13e43710975370350
+git_head_ref: v0.1.2
+git_head_sha: c758669a1fa5f6151cee2cb0eec0576d873c3f29
+git_range: cf5f726f502476dcb6e968c13e43710975370350..c758669a1fa5f6151cee2cb0eec0576d873c3f29
+commit_count: 1
+rows:
+  - sha: c758669a1fa5f6151cee2cb0eec0576d873c3f29
+    source_ref: git:c758669a1fa5f6151cee2cb0eec0576d873c3f29
+    short_sha: c758669
+    changed_paths:
+      - .github/workflows/python-publish.yml
+    stats:
+      files_changed: 0
+      insertions: 0
+      deletions: 19
+    inspected: true
+    inspected_paths:
+      - .github/workflows/python-publish.yml
+    observed_behavior:
+      Removed hard-coded validation for 0.1.0 release artifacts from
+      the package publishing workflow.
+    public_impact: docs
+    decision: accepted
+    evidence_subject: "chore: ci"
+    target_entry_key: publishing-workflow
+    notes: ""
