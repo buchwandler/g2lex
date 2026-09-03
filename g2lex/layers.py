@@ -76,6 +76,10 @@ class CaseAliasMapping(Mapping[str, LexiconValue]):
             ):
                 yield alias
 
+    def __bool__(self) -> bool:
+        """Return raw-mapping emptiness without enumerating aliases."""
+        return bool(self.raw)
+
     def __len__(self) -> int:
         return sum(1 for _ in self)
 

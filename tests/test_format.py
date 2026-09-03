@@ -63,6 +63,27 @@ def test_source_adapters_preserve_shapes() -> None:
     assert parse_word_list_bytes("one\n二\n".encode()).entries["二"] is WORD_ONLY
 
 
+class NoIterMapping:
+    def __getitem__(self, key: str) -> str:
+        if key == "word":
+            return "wɜːd"
+        raise KeyError(key)
+
+    def __iter__(self):
+        raise AssertionError("truth testing must not enumerate the raw mapping")
+
+    def __len__(self) -> int:
+        return 1
+
+
+def test_case_alias_mapping_bool_does_not_iterate_raw_mapping() -> None:
+    assert bool(CaseAliasMapping(NoIterMapping()))
+
+
+def test_case_alias_mapping_bool_is_false_for_empty_mapping() -> None:
+    assert not CaseAliasMapping({})
+
+
 def test_aliases_layers_and_comparison() -> None:
     raw = {"foo": "x", "Foo": "explicit", "bar": "b"}
     aliases = CaseAliasMapping(raw)
