@@ -1,0 +1,92 @@
+schema_version: 1
+object_type: commit_audit_sheet
+versioning:
+  schema_version: 1
+  revision: 3
+release_version: v0.1.9
+git_base_ref: v0.1.8
+git_base_sha: c3e14313b2c40d4c3bd189101d30328eac6b9b98
+git_head_ref: HEAD
+git_head_sha: 918dc3e6225a39e12414e6c6731d148c51dfbc21
+git_range: c3e14313b2c40d4c3bd189101d30328eac6b9b98..918dc3e6225a39e12414e6c6731d148c51dfbc21
+commit_count: 3
+rows:
+  - sha: 1dea948ed9e7d35587d4ce2b2641772642b52210
+    source_ref: git:1dea948ed9e7d35587d4ce2b2641772642b52210
+    short_sha: 1dea948
+    changed_paths:
+      - g2lex/layers.py
+      - tests/test_format.py
+    stats:
+      files_changed: 0
+      insertions: 25
+      deletions: 0
+    inspected: true
+    inspected_paths:
+      - g2lex/layers.py
+      - tests/test_format.py
+    observed_behavior:
+      Added direct truth-value evaluation for case-alias mappings using
+      the underlying mapping without enumerating aliases, with regression coverage for
+      non-empty and empty mappings.
+    public_impact: public
+    decision: accepted
+    stale: false
+    evidence_subject: "feat: add bool property"
+    target_entry_key: case-alias-truthiness
+    target_entry_id: entry-0001
+    notes: The public mapping behavior now has an efficient, non-enumerating truth test.
+  - sha: 7be7d7031489b302dd08bfb4628dc28a2f099857
+    source_ref: git:7be7d7031489b302dd08bfb4628dc28a2f099857
+    short_sha: 7be7d70
+    changed_paths:
+      - g2lex/key_index.py
+      - g2lex/lexicon.py
+      - tests/test_lexicon_runtime_edges.py
+    stats:
+      files_changed: 0
+      insertions: 53
+      deletions: 0
+    inspected: true
+    inspected_paths:
+      - g2lex/key_index.py
+      - g2lex/lexicon.py
+      - tests/test_lexicon_runtime_edges.py
+    observed_behavior:
+      Added Lexicon.prefixes for exact, position-aware prefix matches;
+      key-index prefix lengths are computed lazily and pronunciation records are not
+      decoded during lookup.
+    public_impact: public
+    decision: accepted
+    stale: false
+    evidence_subject: "feat: fix prefixes"
+    target_entry_key: lexicon-prefix-lookup
+    target_entry_id: entry-0002
+    notes:
+      The new lookup is covered for ASCII, Unicode, positional, empty, and missing-input
+      cases.
+  - sha: 918dc3e6225a39e12414e6c6731d148c51dfbc21
+    source_ref: git:918dc3e6225a39e12414e6c6731d148c51dfbc21
+    short_sha: 918dc3e
+    changed_paths:
+      - g2lex/key_index.py
+      - g2lex/lexicon.py
+      - tests/test_lexicon_runtime_edges.py
+    stats:
+      files_changed: 0
+      insertions: 1
+      deletions: 2
+    inspected: true
+    inspected_paths:
+      - g2lex/key_index.py
+      - g2lex/lexicon.py
+      - tests/test_lexicon_runtime_edges.py
+    observed_behavior:
+      Pre-commit formatting removed incidental blank lines and added
+      one required blank line without changing runtime behavior.
+    public_impact: internal
+    decision: internal
+    stale: false
+    evidence_subject: "chore: pre-commit"
+    target_entry_id: entry-0003
+    notes: Formatting-only maintenance commit; excluded from public release notes.
