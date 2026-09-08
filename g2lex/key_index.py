@@ -151,7 +151,6 @@ class FrontCodedKeyIndex:
             and self.find(candidate) is not None
         )
 
-
     def first_keys(self) -> Iterator[str]:
         for block in range(self.block_count):
             yield next(self._decode_block(block))[0]

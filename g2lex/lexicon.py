@@ -151,7 +151,6 @@ class Lexicon(Mapping[str, LexiconValue]):
         self._ensure_open()
         return self._container.key_index.prefixes(text, position)
 
-
     def __contains__(self, word: object) -> bool:
         self._ensure_open()
         return isinstance(word, str) and self._container.key_index.find(word) is not None

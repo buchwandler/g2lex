@@ -158,6 +158,7 @@ def test_corrupt_runtime_blocks_are_rejected() -> None:
 def test_prefixes_are_lazy_exact_and_position_aware() -> None:
     lexicon = _lexicon({"a": "x", "ab": "y", "é": "e", "你好": "n", "ไทย": "t"})
     try:
+
         def fail_if_record_decoded(_ordinal: int):
             raise AssertionError("prefix lookup decoded a pronunciation record")
 
