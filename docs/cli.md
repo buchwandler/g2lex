@@ -11,6 +11,7 @@ g2lex inspect ASSET
 g2lex verify SOURCE ASSET --format FORMAT
 g2lex export ASSET OUTPUT --format FORMAT
 g2lex diff FIRST SECOND
+g2lex convert SOURCE OUTPUT --input-format FORMAT --format FORMAT
 g2lex --version
 ```
 
@@ -18,6 +19,11 @@ g2lex --version
 reads one value. `inspect` reports asset metadata. `verify` compares source and
 compiled content. `export` writes a supported source representation, and `diff`
 reports logical changes between assets.
+`convert` is a stable source-to-source conversion command; its `--input-format` and `--format` names follow the adapter contracts in `source-formats.md`.
+
+## Compatibility commands
+
+`restore` is retained as a legacy compatibility command. It materializes exact G2LX assets and can also read older reduction assets; use `export` for stable exact G2Lex v1 workflows.
 
 Commands return a non-zero status for invalid paths, formats, malformed input,
 incompatible assets, or failed exact comparisons. Error output is intended for

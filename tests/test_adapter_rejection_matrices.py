@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -47,7 +48,7 @@ def test_cmudict_comments_empty_values_and_variant_fidelity() -> None:
 
 
 def _database(path: Path, schema: str | None = None) -> None:
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection:
         if schema is not None:
             connection.execute(schema)
 
@@ -62,8 +63,9 @@ def test_gruut_rejects_missing_table_and_malformed_fields(tmp_path: Path) -> Non
     _database(
         malformed, "CREATE TABLE word_phonemes (word TEXT, pron_order INTEGER, phonemes BLOB)"
     )
-    with sqlite3.connect(malformed) as connection:
+    with closing(sqlite3.connect(malformed)) as connection:
         connection.execute("INSERT INTO word_phonemes VALUES (?, ?, ?)", ("word", 1, None))
+        connection.commit()
     with pytest.raises(TypeError, match="phonemes must be strings"):
         parse_gruut_sqlite(malformed)
 
@@ -74,10 +76,11 @@ def test_gruut_rejects_mixed_tagged_and_untagged_values(tmp_path: Path) -> None:
         path,
         "CREATE TABLE word_phonemes (word TEXT, pron_order INTEGER, phonemes TEXT, role TEXT)",
     )
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection:
         connection.executemany(
             "INSERT INTO word_phonemes VALUES (?, ?, ?, ?)",
             [("word", 1, "w", None), ("word", 2, "w", "noun")],
         )
+        connection.commit()
     with pytest.raises(ValueError, match="mixes tagged"):
         parse_gruut_sqlite(path)

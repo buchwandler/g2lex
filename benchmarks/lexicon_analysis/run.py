@@ -69,7 +69,10 @@ def run_analysis(
     unknown = set(ordered_names) - set(loaded)
     if unknown:
         raise ValueError(f"unknown layer source(s): {', '.join(sorted(unknown))}")
-    layers = [LexiconLayer(name, loaded[name], {}) for name in ordered_names]
+    layers = [
+        LexiconLayer(name, getattr(loaded[name], "entries", loaded[name]), {})
+        for name in ordered_names
+    ]
     reference_mapping = None
     if reference:
         _, reference_source = load_source(reference)

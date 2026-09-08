@@ -24,5 +24,9 @@ def test_distribution_metadata_contract() -> None:
     assert metadata.get_all("Provides-Extra") == ["dev", "benchmark"]
 
 
+def test_runtime_version_matches_distribution_metadata() -> None:
+    assert g2lex.__version__ == importlib.metadata.version("g2lex")
+
+
 def test_py_typed_is_packaged() -> None:
     assert files("g2lex").joinpath("py.typed").is_file()

@@ -6,6 +6,8 @@ import os
 import re
 import subprocess
 from email.parser import Parser
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as distribution_version
 from pathlib import Path
 
 _FALLBACK = "0.1.0"
@@ -55,7 +57,15 @@ def get_version() -> str:
         text = ""
     match = _TAG.match(text)
     if not match:
-        return _sdist_version(root) or _FALLBACK
+        sdist_version = _sdist_version(root)
+        if sdist_version is not None:
+            return sdist_version
+        if not (root / "pyproject.toml").is_file():
+            try:
+                return distribution_version("g2lex")
+            except PackageNotFoundError:
+                pass
+        return _FALLBACK
     base = match.group("base")
     count = int(match.group("count") or 0)
     sha = match.group("sha")

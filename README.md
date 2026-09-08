@@ -51,7 +51,7 @@ Supported Python versions are 3.10 through 3.14.
 - mmap-backed lazy lookup
 - Block compression with a bounded runtime cache
 - Source SHA-256 and logical SHA-256 metadata
-- JSON, JSONL, TSV, Kokoro JSON, CMUdict, MFA, PLS subset, and SQLite adapters
+- JSON, JSONL, TSV, IPA TSV, Kokoro JSON, CMUdict, MFA, PLS subset, and SQLite adapters
 - Lexicon diffing and layering
 - Importlib resource loading
 - Zero mandatory runtime dependencies
@@ -142,8 +142,11 @@ pipeline.
 g2lex pack cmudict.dict cmudict.g2lex --format cmudict
 g2lex pack dictionary.mfa dictionary.g2lex --format mfa
 g2lex pack source.pls source.g2lex --format pls
+g2lex pack ipa.tsv ipa.g2lex --format ipa-tsv
 g2lex pack lexicon.sqlite lexicon.g2lex --format gruut-sqlite
 ```
+
+IPA TSV rows use `word<TAB>/pronunciation/`; the adapter removes one optional outer slash pair and preserves slashes inside the pronunciation.
 
 CMUdict numbered variants such as `WORD(2)` become ordered variants of `WORD`.
 Plain MFA dictionaries are supported. MFA rows carrying probabilities or other

@@ -45,14 +45,28 @@ jobs:
         run: |
           python -m venv /tmp/g2lex-wheel
           /tmp/g2lex-wheel/bin/python -m pip install dist/g2lex-*.whl
-          /tmp/g2lex-wheel/bin/g2lex --version
+          /tmp/g2lex-wheel/bin/python - <<'PY'
+          import importlib.metadata
+          import g2lex
+          metadata_version = importlib.metadata.version("g2lex")
+          assert g2lex.__version__ == metadata_version, (g2lex.__version__, metadata_version)
+          PY
+          expected=$(/tmp/g2lex-wheel/bin/python -c 'import importlib.metadata; print(importlib.metadata.version("g2lex"))')
+          test "$(/tmp/g2lex-wheel/bin/g2lex --version)" = "g2lex ${expected}"
           /tmp/g2lex-wheel/bin/g2lex pack benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/wheel.g2lex --format tsv
           /tmp/g2lex-wheel/bin/g2lex verify benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/wheel.g2lex --format tsv
       - name: Sdist smoke test
         run: |
           python -m venv /tmp/g2lex-sdist
           /tmp/g2lex-sdist/bin/python -m pip install dist/g2lex-*.tar.gz
-          /tmp/g2lex-sdist/bin/g2lex --version
+          /tmp/g2lex-sdist/bin/python - <<'PY'
+          import importlib.metadata
+          import g2lex
+          metadata_version = importlib.metadata.version("g2lex")
+          assert g2lex.__version__ == metadata_version, (g2lex.__version__, metadata_version)
+          PY
+          expected=$(/tmp/g2lex-sdist/bin/python -c 'import importlib.metadata; print(importlib.metadata.version("g2lex"))')
+          test "$(/tmp/g2lex-sdist/bin/g2lex --version)" = "g2lex ${expected}"
           /tmp/g2lex-sdist/bin/g2lex pack benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/sdist.g2lex --format tsv
           /tmp/g2lex-sdist/bin/g2lex verify benchmarks/de_lexicon_entry_reduction/fixtures/toy.tsv /tmp/sdist.g2lex --format tsv
 

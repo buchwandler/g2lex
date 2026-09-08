@@ -61,7 +61,12 @@ exclude = ["tests*", "benchmarks*"]
 g2lex = ["py.typed"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "benchmarks/de_lexicon_entry_reduction/tests"]
+testpaths = [
+  "tests",
+  "benchmarks/de_lexicon_entry_reduction/tests",
+  "benchmarks/lexicon_analysis/tests",
+  "benchmarks/runtime_storage/tests",
+]
 addopts = "-q"
 pythonpath = ["."]
 markers = ["slow: optional large-data benchmark"]

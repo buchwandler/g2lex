@@ -36,6 +36,22 @@ jobs:
           rm -rf dist build g2lex.egg-info
           python -m build
 
+      - name: Smoke test installed wheel version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python -m venv /tmp/g2lex-release-wheel
+          /tmp/g2lex-release-wheel/bin/python -m pip install --no-deps dist/g2lex-*.whl
+          /tmp/g2lex-release-wheel/bin/python - <<'PY'
+          import importlib.metadata
+          import os
+          import g2lex
+          expected = os.environ["RELEASE_TAG"][1:]
+          metadata_version = importlib.metadata.version("g2lex")
+          assert metadata_version == expected, (metadata_version, expected)
+          assert g2lex.__version__ == expected, (g2lex.__version__, expected)
+          PY
+          test "$(/tmp/g2lex-release-wheel/bin/g2lex --version)" = "g2lex ${RELEASE_TAG#v}"
       - name: Validate release artifacts
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
