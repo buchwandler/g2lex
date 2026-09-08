@@ -155,6 +155,23 @@ def test_corrupt_runtime_blocks_are_rejected() -> None:
             runtime.close()
 
 
+def test_prefixes_are_lazy_exact_and_position_aware() -> None:
+    lexicon = _lexicon({"a": "x", "ab": "y", "é": "e", "你好": "n", "ไทย": "t"})
+    try:
+        def fail_if_record_decoded(_ordinal: int):
+            raise AssertionError("prefix lookup decoded a pronunciation record")
+
+        lexicon._value_at = fail_if_record_decoded  # type: ignore[method-assign]
+        assert lexicon.prefixes("abx") == ("a", "ab")
+        assert lexicon.prefixes("xé你好", 1) == ("é",)
+        assert lexicon.prefixes("ไทยภาษา") == ("ไทย",)
+        assert lexicon.prefixes("你好x") == ("你好",)
+        assert lexicon.prefixes("missing") == ()
+        assert lexicon.prefixes("") == ()
+    finally:
+        lexicon.close()
+
+
 def test_close_is_idempotent_and_all_operations_reject_closed() -> None:
     lexicon = _lexicon({"a": "x"})
     lexicon.close()

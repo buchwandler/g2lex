@@ -65,6 +65,7 @@ class FrontCodedKeyIndex:
             raise ValueError("truncated front-coded key-index offsets")
         self._body_end = len(self._view)
         previous = 0
+        self._prefix_lengths_by_initial: dict[str, tuple[int, ...]] | None = None
         for index in range(self.block_count + 1):
             offset = struct.unpack_from(">I", self._view, self._offset_table + index * 4)[0]
             if offset < previous or self._body + offset > self._body_end:
@@ -121,6 +122,35 @@ class FrontCodedKeyIndex:
             previous = encoded
         if position != end:
             raise ValueError("trailing bytes in front-coded key block")
+
+    def _prefix_lengths(self) -> dict[str, tuple[int, ...]]:
+        if self._prefix_lengths_by_initial is None:
+            lengths: dict[str, set[int]] = {}
+            for key in self:
+                if key:
+                    lengths.setdefault(key[0], set()).add(len(key))
+            self._prefix_lengths_by_initial = {
+                initial: tuple(sorted(values)) for initial, values in lengths.items()
+            }
+        return self._prefix_lengths_by_initial
+
+    def prefixes(self, text: str, position: int = 0) -> tuple[str, ...]:
+        """Return exact stored keys that prefix ``text`` at ``position``.
+
+        Prefix lengths are built lazily from the front-coded key index, so
+        pronunciation records are never decoded for this operation.
+        """
+        if not isinstance(text, str) or position >= len(text):
+            return ()
+        initial = text[position]
+        lengths = self._prefix_lengths().get(initial, ())
+        return tuple(
+            candidate
+            for length in lengths
+            if (candidate := text[position : position + length])
+            and self.find(candidate) is not None
+        )
+
 
     def first_keys(self) -> Iterator[str]:
         for block in range(self.block_count):
